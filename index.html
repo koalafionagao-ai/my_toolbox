@@ -4,45 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notion 博客转换工具 (全能极客版)</title>
-    <!-- 引入 JSZip 库用于处理压缩包 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <!-- 引入 Tailwind CSS 用于工具界面美化 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .dragover { border-color: #3b82f6 !important; background-color: #eff6ff !important; }
-        /* 隐藏滚动条但保留功能 */
         #replacedImageList::-webkit-scrollbar { width: 4px; }
         #replacedImageList::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
-        /* 画廊箭头过渡 */
         .gallery-nav-btn { transition: transform 0.2s, opacity 0.2s; opacity: 0.6; }
         .gallery-nav-btn:hover { transform: scale(1.2); opacity: 1; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-8 relative">
 
-    <!-- 顶部工具语言切换 (极简文字链样式) -->
-    <div class="absolute top-6 right-6">
-        <button id="langToggle" class="text-gray-500 hover:text-blue-600 transition font-medium text-sm flex items-center gap-1.5 p-2">
+    <div class="absolute top-6 right-6 z-20">
+        <button id="langToggle" class="text-gray-500 hover:text-blue-600 transition font-medium text-sm flex items-center gap-1.5 p-2 bg-white/80 rounded-lg backdrop-blur-sm shadow-sm border border-gray-100">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
             <span id="langToggleText" data-i18n="langBtn">English</span>
         </button>
     </div>
 
-    <div class="max-w-5xl mx-auto space-y-8 mt-4">
-        <!-- 头部 -->
-        <div class="text-center">
-            <h1 class="text-3xl font-bold text-gray-900" data-i18n="mainTitle">Notion 导出包转换工具</h1>
-            <p class="text-gray-500 mt-2" data-i18n="subTitle">支持代码高亮、Meta排版、CDN加速、智能 WebP 压缩及懒加载。</p>
-        </div>
+    <div class="max-w-5xl mx-auto mt-2 mb-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2" data-i18n="mainTitle">Notion 导出包转换工具</h1>
+        <p class="text-gray-500 text-sm font-medium" data-i18n="subTitle">💡 专为单页 HTML 直出打造，自带中国区加速黑科技与全局样式排版。</p>
+    </div>
 
-        <!-- 第一步 -->
+    <div class="max-w-5xl mx-auto space-y-8">
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <h2 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
                 <span class="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center mr-3">1</span>
                 <span data-i18n="step1Title">配置统一图片路径与 CDN 加速</span>
             </h2>
             
-            <!-- GitHub 账号信息用于原生 CDN 构建 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div class="flex flex-col space-y-1.5">
                     <label for="githubUser" class="text-sm text-gray-600 font-medium" data-i18n="step1GithubUser">GitHub 用户名</label>
@@ -56,25 +48,24 @@
 
             <div class="flex flex-col space-y-1.5">
                 <label for="imagePath" class="text-sm text-gray-600">
-                    <span data-i18n="step1Label">你需要将图片推送到仓库的哪个路径下？（此项用于统一替换本地图片路径并拼接 CDN）</span><br>
-                    <span class="text-blue-500 font-medium" data-i18n="step1WarnReq">💡 例如直接填入 /my_blogs/ 或 /images/</span> 
+                    <span id="pathInputLabel" data-i18n="step1Label">你需要将图片推送到仓库的哪个路径下？（此项用于拼接最终代码里的图片链接）</span><br>
+                    <span id="pathInputHint" class="text-blue-500 font-medium" data-i18n="step1WarnReq">💡 例如直接填入 /en/my-article/images/</span> 
                 </label>
-                <input type="text" id="imagePath" value="/my_blogs/" data-i18n="step1Placeholder" placeholder="例如: /my_blogs/" class="border border-gray-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full transition-colors">
+                <input type="text" id="imagePath" value="/my_blogs/" data-i18n="step1Placeholder" placeholder="例如: /my_blogs/en/my-article/images/" class="border border-gray-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full transition-colors">
                 <div id="pathWarning" class="hidden text-xs text-orange-600 mt-1 bg-orange-50 p-2 rounded border border-orange-200 w-full" data-i18n="pathWarning">
                     ⚠️ 您的路径没有以 <code>/</code> 开头！系统会自动在开头补齐。
                 </div>
             </div>
         </div>
 
-        <!-- 第二步 -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <h2 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
                 <span class="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center mr-3">2</span>
-                <span data-i18n="step2Title">拖拽 Notion 导出的 ZIP 或 HTML 文件</span>
+                <span id="step2Title" data-i18n="step2Title">拖拽 Notion 导出的 ZIP 或 HTML 文件</span>
             </h2>
             <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center cursor-pointer transition-colors duration-200 hover:bg-gray-50 flex flex-col items-center justify-center">
                 <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                <p class="text-gray-600 mb-2" data-i18n="dropText">将 Notion 导出的 <strong>.zip</strong> 或 <strong>.html</strong> 文件拖拽到这里</p>
+                <p id="dropText" class="text-gray-600 mb-2" data-i18n="dropText">将 Notion 导出的 <strong>.zip</strong> 或 <strong>.html</strong> 文件拖拽到这里</p>
                 <p class="text-sm text-gray-400" data-i18n="browseText">或者点击选择文件</p>
                 <input type="file" id="fileInput" accept=".zip,.html,.htm" class="hidden">
             </div>
@@ -89,26 +80,23 @@
             <div id="statusMsg" class="mt-4 text-center hidden text-sm font-medium"></div>
         </div>
 
-        <!-- 第三步 -->
         <div id="resultSection" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hidden opacity-0 transition-opacity duration-500">
             <h2 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
                 <span class="bg-green-100 text-green-600 rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center mr-3">3</span>
                 <span data-i18n="step3Title">处理完成！</span>
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- HTML 结果区 -->
                 <div class="flex flex-col h-full md:col-span-2">
                     <div class="flex justify-between items-center mb-2">
-                        <label class="font-medium text-gray-700" data-i18n="htmlLabel">已完成样式模板化、CDN 注入与懒加载优化的 HTML：</label>
+                        <label id="codeOutputLabel" class="font-medium text-gray-700" data-i18n="htmlLabel">已完成样式模板化、CDN 注入与懒加载优化的 HTML：</label>
                         <div class="space-x-2 flex">
-                            <button id="downloadHtmlBtn" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded text-sm transition font-medium" data-i18n="downloadHtmlBtn">⬇️ 下载文件</button>
+                            <button id="downloadCodeBtn" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded text-sm transition font-medium" data-i18n="downloadHtmlBtn">⬇️ 下载文件</button>
                             <button id="previewBtn" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded text-sm transition font-medium" data-i18n="previewBtn">👁️ 预览样式</button>
                             <button id="copyBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm transition font-medium" data-i18n="copyBtn">📋 复制全部</button>
                         </div>
                     </div>
-                    <textarea id="outputHtml" readonly class="w-full flex-grow border border-gray-300 rounded-lg p-4 bg-gray-50 font-mono text-xs focus:outline-none min-h-[350px] resize-y"></textarea>
+                    <textarea id="outputCode" readonly class="w-full flex-grow border border-gray-300 rounded-lg p-4 bg-gray-50 font-mono text-xs focus:outline-none min-h-[350px] resize-y"></textarea>
                 </div>
-                <!-- 压缩图片列表区 -->
                 <div class="flex flex-col h-full bg-green-50/50 border border-green-100 rounded-lg p-4">
                     <div class="flex justify-between items-center mb-3 border-b border-green-200 pb-2">
                         <h3 class="text-sm font-bold text-green-800 flex items-center">
@@ -125,50 +113,45 @@
             </div>
         </div>
 
-        <!-- 第四步 -->
         <div id="step4Section" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hidden opacity-0 transition-opacity duration-500">
             <h2 class="text-xl font-semibold mb-2 text-gray-800 flex items-center">
                 <span class="bg-purple-100 text-purple-600 rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center mr-3">4</span>
-                <span data-i18n="step4Title">选择社交分享缩略图</span>
+                <span data-i18n="step4Title">选择社交分享缩略图 (封面图)</span>
             </h2>
-            <p class="text-sm text-gray-500 mb-2 ml-11" data-i18n="step4Desc">点击选择一张图片作为微信/Twitter的分享卡片首图。您可以选择文章内的图片，或直接使用精美的默认壁纸。</p>
+            <p class="text-sm text-gray-500 mb-2 ml-11" id="step4Desc" data-i18n="step4Desc">点击选择一张图片作为微信/Twitter的分享卡片首图。您可以选择文章内的图片，或直接使用精美的默认壁纸。</p>
             <p class="text-sm mb-4 ml-11 hidden" id="step4SelectedStatus"></p>
             <div id="thumbnailGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 ml-11">
-                <!-- 缩略图列表将在此动态渲染 -->
-            </div>
+                </div>
         </div>
 
-        <!-- 第五步 -->
         <div id="step5Section" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hidden opacity-0 transition-opacity duration-500">
             <h2 class="text-xl font-semibold mb-2 text-gray-800 flex items-center">
                 <span class="bg-yellow-100 text-yellow-600 rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center mr-3">5</span>
-                <span data-i18n="step5Title">填写一句话文章描述</span>
+                <span data-i18n="step5Title">完善文章元数据 (Meta 标签)</span>
             </h2>
-            <p class="text-sm text-gray-500 mb-4 ml-11" data-i18n="step5Desc">此描述将展示在分享卡片上，并被搜索引擎（SEO）抓取作为搜索结果的摘要文字。</p>
-            <div class="ml-11 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <textarea id="seoDescriptionInput" rows="2" data-i18n-placeholder="descPlaceholder" class="flex-grow w-full sm:w-auto border border-gray-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm transition-colors shadow-sm" placeholder="请输入文章描述摘要..."></textarea>
-                <button id="submitDescBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm whitespace-nowrap flex items-center flex-shrink-0 h-full" data-i18n="submitDescBtn">✅ 提交更新</button>
+            <p class="text-sm text-gray-500 mb-4 ml-11" id="step5Desc" data-i18n="step5Desc">填写以下信息，工具会自动将它们注入到代码 HTML 的 head 中，用于展示和 SEO。</p>
+            <div class="ml-11 flex flex-col gap-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-start gap-3">
+                    <label class="text-sm text-gray-700 font-medium whitespace-nowrap min-w-[80px] mt-2" data-i18n="descLabel">SEO 摘要:</label>
+                    <textarea id="seoDescriptionInput" rows="2" data-i18n-placeholder="descPlaceholder" class="flex-grow w-full border border-gray-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm transition-colors shadow-sm" placeholder="请输入文章描述摘要..."></textarea>
+                    <button id="submitDescBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm whitespace-nowrap flex items-center flex-shrink-0 h-[62px]" data-i18n="submitDescBtn">✅ 提交更新</button>
+                </div>
             </div>
-            <p id="step5SuccessMsg" class="text-sm text-green-600 font-medium mt-3 ml-11 hidden" data-i18n="step5SuccessMsg">✅ 提交成功，代码已更新！请前往第三步下载或复制 HTML。</p>
+            <p id="step5SuccessMsg" class="text-sm text-green-600 font-medium mt-3 ml-11 hidden" data-i18n="step5SuccessMsg">✅ 提交成功，代码已更新！请前往第三步下载或复制文件。</p>
         </div>
     </div>
 
-    <!-- 🖼️ 沉浸式图片画廊弹窗 -->
     <div id="galleryModal" class="fixed inset-0 bg-black/95 z-50 hidden flex-col items-center justify-center backdrop-blur-sm transition-opacity">
         <button onclick="closeGallery()" class="absolute top-5 right-6 text-white text-4xl hover:text-red-400 transition">&times;</button>
-        
         <div class="absolute top-6 left-6 text-white/90 text-sm md:text-base font-medium flex flex-col gap-1">
             <span id="galleryTitle" class="bg-gray-800/60 px-3 py-1.5 rounded-lg border border-gray-600/50"></span>
             <span id="galleryProgress" class="text-gray-400 font-mono pl-1"></span>
         </div>
-        
         <div class="flex items-center justify-between w-full max-w-6xl px-4 md:px-12 mt-8">
             <button onclick="prevGalleryImage()" class="gallery-nav-btn text-white text-6xl hover:text-blue-400 p-4 focus:outline-none">&lsaquo;</button>
-            
             <div class="relative group flex items-center justify-center h-[75vh] w-full mx-4">
                 <img id="galleryImage" src="" class="max-h-full max-w-full object-contain rounded-lg shadow-2xl transition-transform duration-300">
             </div>
-            
             <button onclick="nextGalleryImage()" class="gallery-nav-btn text-white text-6xl hover:text-blue-400 p-4 focus:outline-none">&rsaquo;</button>
         </div>
     </div>
@@ -176,19 +159,19 @@
     <script>
         const i18n = {
             zh: {
-                pageTitle: "Notion 博客转换工具 (全能极客版)",
+                pageTitle: "Notion 博客转换工具 (全能版)",
                 langBtn: "English",
                 mainTitle: "Notion 导出包转换工具",
-                subTitle: "支持代码高亮、Meta排版、CDN加速、智能 WebP 压缩及懒加载。",
+                subTitle: "💡 专为单页 HTML 直出打造，自带中国区加速黑科技与全局样式排版。",
                 step1Title: "配置统一图片路径与 CDN 加速",
                 step1GithubUser: "GitHub 用户名",
                 step1GithubRepo: "仓库名称",
-                step1Label: "你需要将图片推送到仓库的哪个路径下？（此项用于统一替换本地图片路径并拼接 CDN）",
-                step1WarnReq: "💡 例如直接填入 /my_blogs/ 或 /images/",
-                step1Placeholder: "例如: /my_blogs/",
+                step1Label: "你需要将图片推送到仓库的哪个路径下？（此项用于拼接最终代码里的图片链接）",
+                step1WarnReq: "💡 例如直接填入 /en/my-article/images/",
+                step1Placeholder: "例如: /my_blogs/en/my-article/images/",
                 pathWarning: "⚠️ 您的路径没有以 / 开头！系统会自动在开头补齐。",
                 step2Title: "拖拽 Notion 导出的 ZIP 或 HTML 文件",
-                dropText: "将 Notion 导出的 .zip 或 .html 文件拖拽到这里",
+                dropText: "将 Notion 导出的 <strong>.zip</strong> 或 <strong>.html</strong> 文件拖拽到这里",
                 browseText: "或者点击选择文件",
                 step3Title: "处理完成！",
                 htmlLabel: "已完成样式模板化、CDN 注入与懒加载优化的 HTML：",
@@ -197,44 +180,49 @@
                 copyBtn: "📋 复制全部",
                 listTitle: "图片路径替换与 WebP 压缩包",
                 previewWebpBtn: "🖼️ 预览",
-                downloadWebpBtn: "📦 下载包",
+                downloadWebpBtn: "📦 下载图包",
                 currentFileLabel: "当前文件:",
                 reprocessBtn: "🔄 重新处理",
-                errNotZip: "请上传 Notion 导出的 .zip 或 .html 文件！",
+                errNotZip: "文件类型错误，请上传对应的 Notion 导出文件！",
                 parsing: "正在解析文件...",
                 compressing: "⚙️ 正在启动极速画质压缩引擎并转换 WebP...",
-                errNoHtmlTitle: "解析失败：未找到 HTML 文件",
-                success: "处理成功！HTML与资源链接已就绪。",
+                errNoHtmlTitle: "解析失败：未找到可用的文本内容",
+                success: "处理成功！代码与资源包已就绪。",
                 errParse: "解析失败，请确保文件有效。",
                 copied: "✅ 已复制到剪贴板！",
                 pathUpdated: "✅ 路径已改: ",
                 noImages: "这篇文章是纯文本，没有发现任何图片。",
-                pathReplacedItem: "HTML 中的原路径已统一替换为 CDN 链接",
-                step4Title: "选择社交分享缩略图",
+                pathReplacedItem: "HTML 中的原路径已统一替换为最新链接",
+                step4Title: "选择社交分享缩略图 (封面图)",
                 step4Desc: "点击选择一张图片作为微信/Twitter的分享卡片首图。您可以选择文章内的图片，或直接使用精美的默认壁纸。",
                 step4NoImages: "暂无可用图片，已自动应用随机默认壁纸作为兜底。",
-                currentThumbPrefix: "当前媒体分享缩略图为：",
+                currentThumbPrefix: "当前选定的缩略图为：",
                 defaultImageName: "默认图",
-                step5Title: "填写一句话文章描述",
-                step5Desc: "此描述将展示在分享卡片上，并被搜索引擎（SEO）抓取作为搜索结果的摘要文字。",
+                step5Title: "完善文章元数据 (Meta 标签)",
+                step5Desc: "填写以下信息，工具会自动将它们注入到 HTML 的代码中，用于展示和 SEO。",
+                fileNameLabel: "导出文件名:",
+                fileNamePlaceholder: "例如: index.html",
+                tagsLabel: "文章标签:",
+                tagsPlaceholder: "例如: AI, 教程, 随笔 (用逗号分隔)",
+                descLabel: "SEO 摘要:",
                 descPlaceholder: "请输入文章描述摘要...",
                 submitDescBtn: "✅ 提交更新",
-                step5SuccessMsg: "✅ 提交成功，代码已更新！请前往第三步下载或复制 HTML。"
+                step5SuccessMsg: "✅ 提交成功，代码已更新！请前往第三步下载或复制文件。"
             },
             en: {
                 pageTitle: "Notion Blog Converter (Pro)",
                 langBtn: "中文",
                 mainTitle: "Notion Export Converter",
-                subTitle: "Geek highlights, Meta format, CDN accel, WebP compression & Lazy Load.",
+                subTitle: "💡 Built for single-page HTML export, with built-in CDN accel & styling.",
                 step1Title: "Configure Unified Image Path & CDN",
                 step1GithubUser: "GitHub Username",
                 step1GithubRepo: "Repository Name",
-                step1Label: "Where will you push images in your repo? (Used to replace local paths and build CDN links)",
-                step1WarnReq: "💡 e.g., simply enter /my_blogs/ or /images/",
-                step1Placeholder: "e.g., /my_blogs/",
+                step1Label: "Where will you push images in your repo?",
+                step1WarnReq: "💡 e.g. /en/my-article/images/",
+                step1Placeholder: "e.g., /my_blogs/en/my-article/images/",
                 pathWarning: "⚠️ Path does not start with /. Auto-prepending.",
-                step2Title: "Drag & Drop Notion ZIP or HTML Export",
-                dropText: "Drop your Notion .zip or .html file here",
+                step2Title: "Drag & Drop Notion ZIP or HTML",
+                dropText: "Drop your Notion <strong>.zip</strong> or <strong>.html</strong> file here",
                 browseText: "or click to select file",
                 step3Title: "Processing Complete!",
                 htmlLabel: "HTML with Template Styling, CDN & Lazy Load:",
@@ -243,37 +231,42 @@
                 copyBtn: "📋 Copy All",
                 listTitle: "Path Replacement & WebP Pack",
                 previewWebpBtn: "🖼️ Preview",
-                downloadWebpBtn: "📦 Download",
+                downloadWebpBtn: "📦 Download Images",
                 currentFileLabel: "Current File:",
                 reprocessBtn: "🔄 Re-process",
-                errNotZip: "Please upload a valid .zip or .html export!",
+                errNotZip: "Wrong file type uploaded!",
                 parsing: "Parsing file...",
                 compressing: "⚙️ Compressing and converting to WebP...",
-                errNoHtmlTitle: "Parsing Failed: No HTML found",
-                success: "Success! HTML & Resources are ready.",
+                errNoHtmlTitle: "Parsing Failed: No content found",
+                success: "Success! Output and Resources are ready.",
                 errParse: "Parsing failed.",
                 copied: "✅ Copied to clipboard!",
                 pathUpdated: "✅ Path updated: ",
                 noImages: "No images found in this article.",
-                pathReplacedItem: "Original path in HTML replaced with CDN link",
-                step4Title: "Choose Sharing Thumbnail",
-                step4Desc: "Click to select an image for WeChat/Twitter sharing cards. You can choose an article image or use a default wallpaper.",
-                step4NoImages: "No images available. A random default wallpaper is applied as fallback.",
-                currentThumbPrefix: "Current sharing thumbnail: ",
+                pathReplacedItem: "Paths replaced successfully",
+                step4Title: "Choose Sharing Thumbnail (Cover)",
+                step4Desc: "Select an image for sharing cards. Use article images or default wallpapers.",
+                step4NoImages: "No images available. A random default wallpaper is applied.",
+                currentThumbPrefix: "Current selection: ",
                 defaultImageName: "Default Image",
-                step5Title: "Write a Short Description",
-                step5Desc: "This description appears on sharing cards and is used by search engines (SEO) as your article snippet.",
+                step5Title: "Refine Meta Tags",
+                step5Desc: "Fill info below to inject into HTML meta tags for display and SEO.",
+                fileNameLabel: "File Name:",
+                fileNamePlaceholder: "e.g., index.html",
+                tagsLabel: "Tags:",
+                tagsPlaceholder: "e.g., AI, Tech, Guide (comma separated)",
+                descLabel: "Description:",
                 descPlaceholder: "Enter article description...",
                 submitDescBtn: "✅ Submit & Update",
-                step5SuccessMsg: "✅ Updated successfully! Go to Step 3 to download or copy the HTML."
+                step5SuccessMsg: "✅ Updated successfully! Go to Step 3 to get your file."
             }
         };
 
         let currentLang = 'zh';
         let currentLoadedFile = null; 
-        let globalProcessedImages = []; // 存储所有转换好的 WebP 供画廊和下载使用
+        let globalProcessedImages = []; 
         let currentGalleryIdx = 0;
-        let currentSelectedImageName = ""; // 用于动态展示所选缩略图
+        let currentSelectedImageName = ""; 
 
         function t(key) { return i18n[currentLang][key]; }
 
@@ -288,12 +281,10 @@
                     else el.innerHTML = i18n[lang][key];
                 }
             });
-            // 动态处理 textarea 的 placeholder
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                 const key = el.getAttribute('data-i18n-placeholder');
                 if (i18n[lang][key]) el.placeholder = i18n[lang][key];
             });
-            // Update dynamically generated list if exists
             document.querySelectorAll('[data-i18n-dynamic="pathReplacedItem"]').forEach(el => {
                 el.innerHTML = t('pathReplacedItem');
             });
@@ -309,7 +300,6 @@
             setLang(currentLang === 'zh' ? 'en' : 'zh');
         });
 
-        // --- 画廊互动逻辑 ---
         function openGallery(idx) {
             if (globalProcessedImages.length === 0) return;
             currentGalleryIdx = idx;
@@ -322,16 +312,8 @@
             document.getElementById('galleryModal').classList.add('hidden');
             document.getElementById('galleryModal').classList.remove('flex');
         }
-        function nextGalleryImage() {
-            if (globalProcessedImages.length === 0) return;
-            currentGalleryIdx = (currentGalleryIdx + 1) % globalProcessedImages.length;
-            updateGalleryUI();
-        }
-        function prevGalleryImage() {
-            if (globalProcessedImages.length === 0) return;
-            currentGalleryIdx = (currentGalleryIdx - 1 + globalProcessedImages.length) % globalProcessedImages.length;
-            updateGalleryUI();
-        }
+        function nextGalleryImage() { if (globalProcessedImages.length) { currentGalleryIdx = (currentGalleryIdx + 1) % globalProcessedImages.length; updateGalleryUI(); } }
+        function prevGalleryImage() { if (globalProcessedImages.length) { currentGalleryIdx = (currentGalleryIdx - 1 + globalProcessedImages.length) % globalProcessedImages.length; updateGalleryUI(); } }
         function updateGalleryUI() {
             const imgData = globalProcessedImages[currentGalleryIdx];
             document.getElementById('galleryImage').src = imgData.dataUrl;
@@ -342,20 +324,13 @@
         }
         document.addEventListener('keydown', (e) => {
             const modal = document.getElementById('galleryModal');
-            if (!modal.classList.contains('hidden')) {
-                if (e.key === 'ArrowRight') nextGalleryImage();
-                if (e.key === 'ArrowLeft') prevGalleryImage();
-                if (e.key === 'Escape') closeGallery();
-            }
+            if (!modal.classList.contains('hidden')) { if (e.key === 'ArrowRight') nextGalleryImage(); if (e.key === 'ArrowLeft') prevGalleryImage(); if (e.key === 'Escape') closeGallery(); }
         });
 
-        // --- WebP 下载逻辑 ---
         document.getElementById('downloadWebpBtn').addEventListener('click', async () => {
             if (globalProcessedImages.length === 0) return;
             const zip = new JSZip();
-            globalProcessedImages.forEach(img => {
-                zip.file(img.name, img.blob);
-            });
+            globalProcessedImages.forEach(img => zip.file(img.name, img.blob));
             const content = await zip.generateAsync({ type: "blob" });
             const a = document.createElement("a");
             a.href = URL.createObjectURL(content);
@@ -363,22 +338,19 @@
             a.click();
         });
 
-        // --- HTML 下载逻辑 ---
-        document.getElementById('downloadHtmlBtn').addEventListener('click', function() {
-            const htmlContent = document.getElementById('outputHtml').value;
-            if (!htmlContent) return;
-            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        document.getElementById('downloadCodeBtn').addEventListener('click', function() {
+            const content = document.getElementById('outputCode').value;
+            if (!content) return;
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = 'index.html';
             a.click();
         });
 
-        // --- 缩略图手动选择逻辑 ---
         window.updateThumbnail = function(el, url, imageName) {
             currentSelectedImageName = imageName;
             
-            // 清除其他项的选中样式
             document.querySelectorAll('.thumbnail-item').forEach(item => {
                 item.classList.remove('ring-4', 'ring-purple-500', 'border-transparent');
                 item.classList.add('border-gray-200');
@@ -386,21 +358,17 @@
                 if (checkmark) checkmark.remove();
             });
             
-            // 为当前项添加选中样式
             el.classList.remove('border-gray-200');
             el.classList.add('ring-4', 'ring-purple-500', 'border-transparent');
             el.insertAdjacentHTML('beforeend', '<div class="checkmark absolute top-1 right-1 bg-purple-500 text-white rounded-full p-0.5 shadow-sm"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>');
             
-            // 更新输出区域的 HTML Meta Tags
-            const textarea = document.getElementById('outputHtml');
+            const textarea = document.getElementById('outputCode');
             textarea.value = textarea.value.replace(/<meta property="og:image" content="[^"]*">/, `<meta property="og:image" content="${url}">`);
             textarea.value = textarea.value.replace(/<meta name="twitter:image" content="[^"]*">/, `<meta name="twitter:image" content="${url}">`);
             
-            // 动态更新状态文案
             document.getElementById('step4SelectedStatus').innerHTML = t('currentThumbPrefix') + `<span class="text-purple-600 font-bold">${currentSelectedImageName}</span> ✅`;
         };
 
-        // --- 核心转换逻辑：Canvas 压缩 WebP 与生成 Base64 占位图 ---
         function compressImageToWebP(blob, originalName) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -408,42 +376,32 @@
                 img.onload = () => {
                     URL.revokeObjectURL(url);
                     const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-
-                    // 限制最大宽高，避免原图过大导致卡顿
+                    let width = img.width; let height = img.height;
                     const MAX_DIM = 1920;
                     if (width > MAX_DIM || height > MAX_DIM) {
                         if (width > height) { height = Math.round(height * (MAX_DIM / width)); width = MAX_DIM; }
                         else { width = Math.round(width * (MAX_DIM / height)); height = MAX_DIM; }
                     }
-                    canvas.width = width;
-                    canvas.height = height;
+                    canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    // 强力压缩：0.8 是画质与体积的完美平衡点
                     const quality = 0.8;
                     const dataUrl = canvas.toDataURL('image/webp', quality);
                     
-                    // 生成极其微小的 Base64 占位图 (LQIP)，用于 HTML 渲染时防白屏
                     const lqipCanvas = document.createElement('canvas');
                     const lqipSize = 20; 
                     let lqipW = width > height ? lqipSize : Math.round(width * lqipSize / height);
                     let lqipH = height > width ? lqipSize : Math.round(height * lqipSize / width);
-                    if (lqipW < 1) lqipW = 1;
-                    if (lqipH < 1) lqipH = 1;
-                    lqipCanvas.width = lqipW;
-                    lqipCanvas.height = lqipH;
+                    if (lqipW < 1) lqipW = 1; if (lqipH < 1) lqipH = 1;
+                    lqipCanvas.width = lqipW; lqipCanvas.height = lqipH;
                     lqipCanvas.getContext('2d').drawImage(img, 0, 0, lqipW, lqipH);
                     const lqipDataUrl = lqipCanvas.toDataURL('image/webp', 0.5);
 
-                    // 重命名为 .webp
                     const nameParts = originalName.split('.');
                     if (nameParts.length > 1) nameParts.pop();
                     const newName = nameParts.join('.') + '.webp';
 
-                    // DataURL 转 Blob 计算真实大小
                     const arr = dataUrl.split(',');
                     const mime = arr[0].match(/:(.*?);/)[1];
                     const bstr = atob(arr[1]);
@@ -454,40 +412,30 @@
 
                     resolve({ originalName, name: newName, blob: newBlob, dataUrl, lqipDataUrl, oldSize: blob.size, newSize: newBlob.size });
                 };
-                img.onerror = () => {
-                    // 非图片文件（如损坏或纯svg）直接原样返回
-                    resolve({ originalName, name: originalName, blob, dataUrl: url, lqipDataUrl: url, oldSize: blob.size, newSize: blob.size });
-                };
+                img.onerror = () => { resolve({ originalName, name: originalName, blob, dataUrl: url, lqipDataUrl: url, oldSize: blob.size, newSize: blob.size }); };
                 img.src = url;
             });
         }
-
 
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
         const statusMsg = document.getElementById('statusMsg');
         const resultSection = document.getElementById('resultSection');
         const imagePathInput = document.getElementById('imagePath');
-        const pathWarning = document.getElementById('pathWarning');
         const fileInfoArea = document.getElementById('fileInfoArea');
         const currentFileName = document.getElementById('currentFileName');
-        const reprocessBtn = document.getElementById('reprocessBtn');
 
-        reprocessBtn.addEventListener('click', () => { if (currentLoadedFile) handleFile(currentLoadedFile); });
+        document.getElementById('reprocessBtn').addEventListener('click', () => { if (currentLoadedFile) handleFile(currentLoadedFile); });
         imagePathInput.addEventListener('input', (e) => {
             const val = e.target.value.trim();
-            if (val !== '' && !val.startsWith('/') && !val.startsWith('http') && !val.startsWith('.')) pathWarning.classList.remove('hidden');
-            else pathWarning.classList.add('hidden');
+            if (val !== '' && !val.startsWith('/') && !val.startsWith('http') && !val.startsWith('.')) document.getElementById('pathWarning').classList.remove('hidden');
+            else document.getElementById('pathWarning').classList.add('hidden');
         });
 
         dropZone.addEventListener('click', () => fileInput.click());
         dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
         dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-        });
+        dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
         fileInput.addEventListener('change', (e) => { if (e.target.files.length) handleFile(e.target.files[0]); });
 
         async function handleFile(file) {
@@ -495,46 +443,39 @@
             currentFileName.textContent = file.name;
             fileInfoArea.classList.remove('hidden');
             const fileNameLower = file.name.toLowerCase();
-            if (!fileNameLower.endsWith('.zip') && !fileNameLower.endsWith('.html') && !fileNameLower.endsWith('.htm')) {
-                showStatus('errNotZip', 'text-red-600');
-                return;
-            }
+            
+            const isValid = fileNameLower.endsWith('.zip') || fileNameLower.endsWith('.html') || fileNameLower.endsWith('.htm');
+
+            if (!isValid) { showStatus('errNotZip', 'text-red-600'); return; }
+            
             showStatus('parsing', 'text-blue-600');
             resultSection.classList.add('hidden');
             document.getElementById('step4Section').classList.add('hidden');
+            document.getElementById('step5Section').classList.add('hidden');
             globalProcessedImages = [];
             
             try {
-                let htmlContent = '';
+                let parsedTextContent = '';
                 let maxLen = 0;
-                let allImages = []; // 强力图片雷达，跨越所有 ZIP 层级收集资源
+                let allImages = []; 
                 
                 if (fileNameLower.endsWith('.zip')) {
                     const zip = new JSZip();
                     const loadedZip = await zip.loadAsync(file);
                     
-                    // 递归穿透寻找HTML和图片（彻底解决 Notion 套娃导出的找图失败问题）
                     async function searchZip(currentZip) {
                         const keys = Object.keys(currentZip.files);
                         for (const key of keys) {
                             const entry = currentZip.files[key];
                             if (entry.dir) continue;
-                            
                             const lowerKey = key.toLowerCase();
                             if (lowerKey.includes('__macosx') || key.split('/').pop().startsWith('.')) continue;
 
                             if (lowerKey.endsWith('.zip')) {
-                                try {
-                                    const nestedBlob = await entry.async("blob");
-                                    const nestedZip = await JSZip.loadAsync(nestedBlob);
-                                    await searchZip(nestedZip);
-                                } catch(e) {}
+                                try { const nestedBlob = await entry.async("blob"); const nestedZip = await JSZip.loadAsync(nestedBlob); await searchZip(nestedZip); } catch(e) {}
                             } else if (lowerKey.endsWith('.html') || lowerKey.endsWith('.htm')) {
                                 const content = await entry.async("string");
-                                if (content.length > maxLen) {
-                                    maxLen = content.length;
-                                    htmlContent = content;
-                                }
+                                if (content.length > maxLen) { maxLen = content.length; parsedTextContent = content; }
                             } else if (lowerKey.match(/\.(png|jpe?g|gif|webp)$/i)) {
                                 const blob = await entry.async("blob");
                                 allImages.push({ key, blob });
@@ -543,7 +484,6 @@
                     }
                     await searchZip(loadedZip);
 
-                    // 启动极速图片压缩流水线
                     if (allImages.length > 0) {
                         showStatus('compressing', 'text-indigo-600');
                         for (const imgObj of allImages) {
@@ -552,146 +492,114 @@
                             globalProcessedImages.push(compressedData);
                         }
                     }
-
                 } else {
-                    htmlContent = await file.text();
+                    parsedTextContent = await file.text();
                 }
 
-                if (!htmlContent) {
-                    showStatus('errNoHtmlTitle', 'text-red-600');
-                    return;
-                }
+                if (!parsedTextContent) { showStatus('errNoHtmlTitle', 'text-red-600'); return; }
 
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(htmlContent, "text/html");
-
-                // --- 终极容灾路径引擎变量准备 ---
                 const githubUser = document.getElementById('githubUser').value.trim() || 'koalafionagao-ai';
                 const githubRepo = document.getElementById('githubRepo').value.trim() || 'my_blogs';
                 let rawPath = imagePathInput.value.trim() || '/my_blogs/';
-                
                 if (!rawPath.startsWith('/') && !rawPath.startsWith('http') && !rawPath.startsWith('.')) rawPath = '/' + rawPath;
                 const finalPrefix = rawPath.endsWith('/') ? rawPath : rawPath + '/';
-                
                 let cdnRepoPath = finalPrefix;
-                if (cdnRepoPath.startsWith(`/${githubRepo}/`)) {
-                    cdnRepoPath = cdnRepoPath.substring(`/${githubRepo}`.length);
-                }
+                if (cdnRepoPath.startsWith(`/${githubRepo}/`)) cdnRepoPath = cdnRepoPath.substring(`/${githubRepo}`.length);
                 if (!cdnRepoPath.startsWith('/')) cdnRepoPath = '/' + cdnRepoPath;
-                
-                // 仅用于 OG Meta 标签的绝对 URL 根路径
                 const cdnBaseUrl = `https://${githubUser}.github.io${finalPrefix}`;
 
+                const fallbackImages = [
+                    "https://images.unsplash.com/photo-1646583288948-24548aedffd8?q=80&w=2071&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=2232&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1638342863994-ae4eee256688?q=80&w=2070&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1546074177-ffdda98d214f?q=80&w=1674&auto=format&fit=crop"
+                ];
+                let ogImageUrl = ""; currentSelectedImageName = "";
+                if (globalProcessedImages.length > 0) {
+                    const MAX_THUMBNAIL_SIZE = 500 * 1024;
+                    let candidates = globalProcessedImages.filter(img => img.newSize <= MAX_THUMBNAIL_SIZE);
+                    if (candidates.length > 0) {
+                        candidates.sort((a, b) => a.newSize - b.newSize);
+                        ogImageUrl = cdnBaseUrl + encodeURIComponent(candidates[0].name);
+                        currentSelectedImageName = candidates[0].name;
+                    } else {
+                        ogImageUrl = cdnBaseUrl + encodeURIComponent(globalProcessedImages[0].name);
+                        currentSelectedImageName = globalProcessedImages[0].name;
+                    }
+                } else {
+                    let randomIdx = Math.floor(Math.random() * fallbackImages.length);
+                    ogImageUrl = fallbackImages[randomIdx];
+                    currentSelectedImageName = t('defaultImageName') + " " + (randomIdx + 1);
+                }
+
+                let finalOutputString = '';
+                const replacedImages = [];
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(parsedTextContent, "text/html");
+
                 function formatNotionDate(dateStr) {
-                    if (!dateStr) return '';
-                    let cleanStr = dateStr.replace(/@/g, '').trim();
-                    const dateRegex = /(\d{4})[^\d]+(\d{1,2})[^\d]+(\d{1,2})[^\d]+(\d{1,2}:\d{2})/;
-                    const match = cleanStr.match(dateRegex);
-                    if (match) {
-                        return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')} ${match[4]}`;
-                    }
+                    if (!dateStr) return ''; let cleanStr = dateStr.replace(/@/g, '').trim();
+                    const dateRegex = /(\d{4})[^\d]+(\d{1,2})[^\d]+(\d{1,2})[^\d]+(\d{1,2}:\d{2})/; const match = cleanStr.match(dateRegex);
+                    if (match) return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')} ${match[4]}`;
                     const parsed = new Date(cleanStr);
-                    if (!isNaN(parsed)) {
-                        const y = parsed.getFullYear();
-                        const m = String(parsed.getMonth() + 1).padStart(2, '0');
-                        const d = String(parsed.getDate()).padStart(2, '0');
-                        const h = String(parsed.getHours()).padStart(2, '0');
-                        const min = String(parsed.getMinutes()).padStart(2, '0');
-                        return `${y}-${m}-${d} ${h}:${min}`;
-                    }
+                    if (!isNaN(parsed)) return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')} ${String(parsed.getHours()).padStart(2, '0')}:${String(parsed.getMinutes()).padStart(2, '0')}`;
                     return cleanStr;
                 }
 
-                let cTime = '', uTime = '', tags = '';
-                let isOriginalEn = false; 
-                
+                let cTime = '', uTime = '', tags = ''; let isOriginalEn = false; 
                 const propTable = doc.querySelector('table.properties');
                 if (propTable) {
                     const propText = propTable.textContent.toLowerCase();
-                    if (propText.includes('created') || propText.includes('edited') || propText.includes('tags')) {
-                        isOriginalEn = true;
-                    }
-
+                    if (propText.includes('created') || propText.includes('edited') || propText.includes('tags')) isOriginalEn = true;
                     propTable.querySelectorAll('tr').forEach(row => {
-                        const label = row.querySelector('th')?.textContent.toLowerCase() || '';
-                        const val = row.querySelector('td')?.innerHTML || '';
-                        const textVal = row.querySelector('td')?.textContent || '';
-                        
+                        const label = row.querySelector('th')?.textContent.toLowerCase() || ''; const val = row.querySelector('td')?.innerHTML || ''; const textVal = row.querySelector('td')?.textContent || '';
                         if (label.includes('创建') || label.includes('created') || row.classList.contains('property-row-created_time')) cTime = formatNotionDate(textVal);
                         else if (label.includes('更新') || label.includes('edited') || label.includes('updated') || row.classList.contains('property-row-last_edited_time')) uTime = formatNotionDate(textVal);
                         else if (label.includes('标签') || label.includes('tag') || row.classList.contains('property-row-multi_select')) tags = val;
                     });
                     propTable.remove();
-                } else {
-                    const oldMeta = doc.querySelector('.custom-blog-meta');
-                    if (oldMeta) {
-                        if (oldMeta.textContent.includes('Created:') || oldMeta.textContent.includes('Tags:')) isOriginalEn = true;
-                        
-                        const oldTags = oldMeta.querySelector('.meta-tags-value');
-                        if (oldTags) tags = oldTags.innerHTML;
-                        const oldCTime = oldMeta.querySelector('.meta-ctime-value');
-                        if (oldCTime) cTime = oldCTime.textContent.trim();
-                        const oldUTime = oldMeta.querySelector('.meta-utime-value');
-                        if (oldUTime) uTime = oldUTime.textContent.trim();
-                    }
                 }
 
                 const isEn = finalPrefix.includes('/en/') || isOriginalEn;
-
-                // 彻底清理先前的注入痕迹
-                doc.querySelectorAll('.custom-blog-meta').forEach(el => el.remove());
-                doc.querySelectorAll('.custom-blog-footer').forEach(el => el.remove());
-                doc.querySelectorAll('meta[property^="og:"], meta[name^="twitter:"]').forEach(el => el.remove());
+                doc.querySelectorAll('.custom-blog-meta').forEach(el => el.remove()); doc.querySelectorAll('.custom-blog-footer').forEach(el => el.remove()); doc.querySelectorAll('meta[property^="og:"], meta[name^="twitter:"], meta[name="description"]').forEach(el => el.remove());
 
                 const h1 = doc.querySelector('h1.page-title') || doc.querySelector('h1');
                 const header = doc.querySelector('header');
-                if (header && h1 && header.contains(h1)) {
-                    header.innerHTML = '';
-                    header.appendChild(h1);
-                }
-
-                // 替换图片并准备 [智能地域感知 + Base64占位 + CDN拉取 + 原生Fallback]
-                const replacedImages = []; 
+                if (header && h1 && header.contains(h1)) { header.innerHTML = ''; header.appendChild(h1); }
                 
+                // 💡 【新增】为所有标题打上规范的 ID，供 Tocbot 锚点跳转使用
+                doc.querySelectorAll('.page-body h1, .page-body h2, .page-body h3, h1, h2, h3').forEach((h, index) => {
+                    if (!h.id) {
+                        const safeText = h.textContent.trim().replace(/\s+/g, '-').toLowerCase() || 'heading';
+                        h.id = `${safeText}-${index}`;
+                    }
+                });
+                
+                // 💡 【新增】微信朋友圈首图 Hack (隐藏的高清首图，专治微信瞎眼爬虫)
+                const wechatHack = doc.createElement('div');
+                wechatHack.style.cssText = 'width:0; height:0; position:absolute; overflow:hidden;';
+                wechatHack.innerHTML = `<img src="${ogImageUrl}" alt="cover">`;
+                doc.body.prepend(wechatHack);
+
                 doc.querySelectorAll('img').forEach(img => {
                     const src = img.getAttribute('src');
                     if (src && !src.startsWith('http') && !src.startsWith('data:')) {
-                        let fileName = '';
-                        try { fileName = decodeURIComponent(src.split('/').pop()); } catch(e) { fileName = src.split('/').pop(); }
-                        
+                        let fileName = ''; try { fileName = decodeURIComponent(src.split('/').pop()); } catch(e) { fileName = src.split('/').pop(); }
                         const matchedObj = globalProcessedImages.find(p => p.originalName === fileName || decodeURIComponent(p.originalName) === fileName);
                         const finalFileName = matchedObj ? matchedObj.name : fileName;
-
-                        // 默认所有 img 的 src 填写最兼容、全球访问最快的原生路径
                         const nativePath = finalPrefix + finalFileName;
                         
                         if (matchedObj) {
-                            // 准备好国内镜像加速 CDN (jsDelivr) 路径与 Base64 占位数据，供后续 JS 根据地域按需激活
                             const fastCdnPath = `https://cdn.jsdelivr.net/gh/${githubUser}/${githubRepo}@master${cdnRepoPath}${encodeURIComponent(finalFileName)}`;
-                            
                             img.setAttribute('src', nativePath);
-                            img.setAttribute('data-native', nativePath);
-                            img.setAttribute('data-cdn', fastCdnPath);
-                            
-                            // 【核心修复】完美保留原生的懒加载与异步解码属性
-                            img.setAttribute('loading', 'lazy');
-                            img.setAttribute('decoding', 'async');
-                            
-                            // 【核心修复】将 Base64 占位图直接内联写死在 HTML 中，全球 100% 触发高斯模糊，彻底告别白屏！
-                            img.style.backgroundImage = `url('${matchedObj.lqipDataUrl}')`;
-                            img.style.backgroundSize = 'cover';
-                            img.style.filter = 'blur(10px)';
-                            img.style.transition = 'filter 0.5s ease-out';
-                            
-                            // 成功加载真实图片时，确保清理可能存在的模糊效果
+                            img.setAttribute('data-native', nativePath); img.setAttribute('data-cdn', fastCdnPath);
+                            img.setAttribute('loading', 'lazy'); img.setAttribute('decoding', 'async');
+                            img.style.backgroundImage = `url('${matchedObj.lqipDataUrl}')`; img.style.backgroundSize = 'cover'; img.style.filter = 'blur(10px)'; img.style.transition = 'filter 0.5s ease-out';
                             img.setAttribute('onload', "this.style.backgroundImage='none'; this.style.filter='blur(0)';");
                         } else {
-                            // 如果没有成功转 WebP，直接原样使用原生路径
-                            img.setAttribute('src', nativePath);
-                            img.setAttribute('loading', 'lazy');
-                            img.setAttribute('decoding', 'async');
+                            img.setAttribute('src', nativePath); img.setAttribute('loading', 'lazy'); img.setAttribute('decoding', 'async');
                         }
-                        
                         if (img.parentElement.tagName === 'A') img.parentElement.setAttribute('href', nativePath);
                         replacedImages.push(finalFileName);
                     }
@@ -711,162 +619,112 @@
                     .footer-author-link { color: #3b82f6; text-decoration: none; font-weight: 500; }
                     .legal-row { font-size: 0.75rem; color: #9ca3af; margin: 0; line-height: 1.6; max-width: 100%; }
                     
-                    /* 极客代码块精修版 - 彻底修复黑色模糊及ASCII图背景干扰 */
-                    pre.code { 
-                        background: #1e1e1e !important; 
-                        border-radius: 8px !important; 
-                        padding: 2.5rem 1rem 1.2rem !important; 
-                        position: relative !important; 
-                        margin: 1.5rem 0 !important; 
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important; 
-                        white-space: pre !important; 
-                        word-break: normal !important; 
-                        overflow-x: auto !important;
-                    }
-                    /* 破解 Notion 强制继承色带来的全黑问题 */
-                    .code > code { 
-                        color: #e0e0e0 !important; 
-                        white-space: pre !important; 
-                        word-break: normal !important; 
-                        text-shadow: none !important; 
-                        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
-                        font-size: 0.875rem !important;
-                        line-height: 1.5 !important;
-                        -webkit-font-smoothing: antialiased !important;
-                        -moz-osx-font-smoothing: grayscale !important;
-                    }
-                    /* 核心：彻底移除代码块内所有标签的背景色，防止流程图出现色块断裂 */
-                    pre.code span {
-                        background: transparent !important;
-                    }
+                    /* 🌟 修复：代码块防穿模，按需分离滚动域 🌟 */
+                    .code-wrapper { position: relative; margin: 1.5rem 0; border-radius: 8px; background: #1e1e1e; box-shadow: 0 4px 12px rgba(0,0,0,0.3); overflow: hidden; }
+                    pre.code { background: transparent !important; border-radius: 0 !important; padding: 2.5rem 1rem 1.2rem !important; margin: 0 !important; box-shadow: none !important; white-space: pre !important; word-break: normal !important; overflow-x: auto !important; position: static !important; }
+                    .code > code { color: #e0e0e0 !important; white-space: pre !important; word-break: normal !important; text-shadow: none !important; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important; font-size: 0.875rem !important; line-height: 1.5 !important; }
+                    pre.code span { background: transparent !important; }
+                    pre.code span.highlight-default { color: #e0e0e0 !important; } pre.code span.highlight-gray { color: #9ca3af !important; } pre.code span.highlight-brown { color: #d6b49c !important; } pre.code span.highlight-orange { color: #fb923c !important; } pre.code span.highlight-yellow { color: #fcd34d !important; } pre.code span.highlight-teal { color: #4ade80 !important; } pre.code span.highlight-blue { color: #60a5fa !important; } pre.code span.highlight-purple { color: #c084fc !important; } pre.code span.highlight-pink { color: #f472b6 !important; } pre.code span.highlight-red { color: #f87171 !important; }
                     
-                    /* 颜色映射 - 仅文字变色 */
-                    pre.code span.highlight-default, pre.code span.block-color-default { color: #e0e0e0 !important; }
-                    pre.code span.highlight-gray, pre.code span.block-color-gray { color: #9ca3af !important; }
-                    pre.code span.highlight-brown, pre.code span.block-color-brown { color: #d6b49c !important; }
-                    pre.code span.highlight-orange, pre.code span.block-color-orange { color: #fb923c !important; }
-                    pre.code span.highlight-yellow, pre.code span.block-color-yellow { color: #fcd34d !important; }
-                    pre.code span.highlight-teal, pre.code span.block-color-teal { color: #4ade80 !important; }
-                    pre.code span.highlight-blue, pre.code span.block-color-blue { color: #60a5fa !important; }
-                    pre.code span.highlight-purple, pre.code span.block-color-purple { color: #c084fc !important; }
-                    pre.code span.highlight-pink, pre.code span.block-color-pink { color: #f472b6 !important; }
-                    pre.code span.highlight-red, pre.code span.block-color-red { color: #f87171 !important; }
-
-                    .copy-code-btn { position: absolute; top: 8px; right: 8px; background: #374151; color: #9ca3af; padding: 6px; border-radius: 6px; border: 1px solid #4b5563; cursor: pointer; transition: all 0.2s; z-index: 10; display: flex; align-items: center; justify-content: center; }
-                    .copy-code-btn:hover { background: #4b5563; color: #fff; }
+                    /* 🌟 优化：代码块右上角极简纯净 Copy 按钮 🌟 */
+                    .copy-code-btn { position: absolute; top: 12px; right: 12px; background: transparent; color: #6b7280; padding: 4px; border: none; cursor: pointer; transition: color 0.2s; z-index: 10; display: flex; align-items: center; justify-content: center; }
+                    .copy-code-btn:hover { color: #d1d5db; background: transparent; }
+                    
                     .code-lang-label { position: absolute; top: 10px; left: 12px; font-size: 11px; color: #9ca3af; text-transform: uppercase; font-weight: 500; letter-spacing: 0.5px; z-index: 10; pointer-events: none; text-shadow: none !important; }
-                    
                     @media (max-width: 640px) { .meta-row { flex-direction: column; align-items: flex-start; gap: 0.5rem; } .meta-right { width: 100%; justify-content: flex-start; margin-top: 0.25rem; } }
+                    
+                    /* 🌟 修复与重构：悬浮目录大纲 (TOC) 样式 (纯PC端优雅版) 🌟 */
+                    .toc-wrapper { position: fixed; right: 24px; top: 50%; transform: translateY(-50%); z-index: 50; width: 36px; transition: width 0.3s ease; }
+                    /* 防闪烁透明热区：极其宽大的检测层，鼠标稍微移动也不会掉落状态 */
+                    .toc-wrapper::after { content: ''; position: absolute; top: -40px; bottom: -40px; left: -60px; right: -20px; z-index: -1; }
+                    .toc-wrapper:hover { width: 280px; }
+                    
+                    .toc-content { background: transparent; width: 100%; max-height: 60vh; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid transparent; padding: 0.5rem 0; position: relative; z-index: 1; }
+                    .toc-content::-webkit-scrollbar { display: none; }
+                    
+                    .toc-wrapper:hover .toc-content { background: white; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border-color: #f3f4f6; padding: 1.25rem; max-height: calc(100vh - 120px); }
+                    .toc-wrapper:hover .toc-content::-webkit-scrollbar { display: block; width: 4px; }
+                    .toc-wrapper:hover .toc-content::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+                    
+                    /* 统一重置列表基础样式，彻底清除 tocbot 默认烦人的左侧边框与竖线 */
+                    .toc-list { list-style: none; padding: 0; margin: 0; border: none !important; }
+                    .toc-list .toc-list { border: none !important; padding-left: 0; }
+                    
+                    /* 状态 A：未悬浮（横线地图模式） */
+                    .toc-wrapper:not(:hover) .toc-list-item { display: flex; justify-content: flex-end; margin-bottom: 8px; border: none !important; }
+                    .toc-wrapper:not(:hover) .toc-link { display: block; width: 16px; height: 4px; background-color: #e5e7eb; border-radius: 2px; color: transparent !important; font-size: 0; padding: 0; margin: 0; transition: all 0.2s ease; overflow: hidden; white-space: nowrap; user-select: none; border: none !important; }
+                    .toc-wrapper:not(:hover) .toc-list .toc-list { margin-top: 8px; width: 100%; }
+                    .toc-wrapper:not(:hover) .toc-list .toc-list .toc-link { width: 10px; }
+                    /* 高亮当前阅读进度 (绿薯条) */
+                    .toc-wrapper:not(:hover) .is-active-link { background-color: #55b685 !important; width: 24px !important; }
+                    /* 彻底隐藏可能自带的伪元素竖线 */
+                    .toc-wrapper:not(:hover) .toc-link::before { display: none !important; }
+                    
+                    /* 状态 B：悬浮展开（完整目录模式） */
+                    .toc-wrapper:hover .toc-list-item { margin-bottom: 0; display: block; text-align: left; }
+                    .toc-wrapper:hover .toc-list .toc-list { padding-left: 1rem; margin-top: 0.2rem; }
+                    .toc-wrapper:hover .toc-link { display: block; width: auto; height: auto; background-color: transparent; color: #4b5563; margin: 0; padding: 0.4rem 0.5rem; border-radius: 6px; font-size: 0.875rem; white-space: normal; word-break: break-word; line-height: 1.5; transition: all 0.2s; }
+                    .toc-wrapper:hover .toc-link:hover { background: #f3f4f6; color: #111827; }
+                    /* 高亮当前阅读进度 */
+                    .toc-wrapper:hover .is-active-link { color: #111827; font-weight: 600; background: #f9fafb; position: relative; }
+                    .toc-wrapper:hover .is-active-link::before { content: ''; position: absolute; left: 0; top: 15%; bottom: 15%; width: 3px; border-radius: 2px; background: #55b685; }
+                    
+                    /* 禁用 Tocbot 的原生折叠隐藏，保持所有层级全展开 */
+                    .is-collapsible { max-height: none !important; overflow: visible !important; }
+                    .is-collapsed { max-height: none !important; }
+                
+                    /* 移动端强制隐藏 */
+                    @media (max-width: 1280px) { .toc-wrapper { display: none !important; } }
                 `;
                 doc.head.appendChild(style);
 
-                const metaContainer = doc.createElement('div');
-                metaContainer.className = 'custom-blog-meta';
-                
-                const labelCreated = isEn ? 'Created' : '创建时间';
-                const labelUpdated = isEn ? 'Updated' : '上次更新时间';
-                const labelTags = isEn ? 'Tags' : '标签';
-                const labelHome = isEn ? 'Home' : '首页';
-                const labelLang = isEn ? '中文' : 'English';
+                const metaContainer = doc.createElement('div'); metaContainer.className = 'custom-blog-meta';
                 const translateIcon = `<svg style="width:14px;height:14px;opacity:0.7;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>`;
+                metaContainer.innerHTML = `<div class="meta-row"><div class="meta-left">${tags ? `<div style="display:flex;align-items:center;gap:0.35rem;"><svg style="width:14px;height:14px;opacity:0.6;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg><span style="font-weight:600;color:#4b5563;font-size:0.8125rem;">${isEn?'Tags':'标签'}:</span><div class="meta-tags-value" style="display:flex;gap:0.3rem;">${tags}</div></div>` : ''}<div class="author-badge" onclick="copyAuthorEmail(this)" title="koala.fiona.gao@gmail.com"><svg style="width:14px;height:14px;opacity:0.8;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg><span class="author-text">Fiona Gao</span></div></div><div class="meta-right"><a href="https://koalafionagao-ai.github.io/my_blogs/" target="_blank" class="meta-text-link" style="display:flex;align-items:center;gap:4px;"><svg style="width:15px;height:15px;opacity:0.8;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>${isEn?'Home':'首页'}</a></div></div><div class="meta-row" style="color: #6b7280; font-size: 0.8125rem;"><div class="meta-left" style="gap: 1.25rem;">${cTime ? `<div style="display:flex;align-items:center;gap:0.35rem;"><svg style="width:14px;height:14px;opacity:0.6;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><span style="font-weight:600;color:#4b5563;">${isEn?'Created':'创建时间'}:</span> <span class="meta-ctime-value" style="color: #1f2937;">${cTime}</span></div>` : ''}${uTime ? `<div style="display:flex;align-items:center;gap:0.35rem;"><svg style="width:14px;height:14px;opacity:0.6;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span style="font-weight:600;color:#4b5563;">${isEn?'Updated':'更新时间'}:</span> <span class="meta-utime-value" style="color: #1f2937;">${uTime}</span></div>` : ''}</div><div class="meta-right"><span class="meta-text-link" onclick="togglePageLanguage()">${translateIcon} ${isEn?'中文':'English'}</span></div></div>`;
+                if (h1) { h1.style.marginBottom = "0.5rem"; h1.after(metaContainer); } else { doc.body.prepend(metaContainer); }
 
-                metaContainer.innerHTML = `
-                    <div class="meta-row">
-                        <div class="meta-left">
-                            ${tags ? `<div style="display:flex;align-items:center;gap:0.35rem;"><svg style="width:14px;height:14px;opacity:0.6;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg><span style="font-weight:600;color:#4b5563;font-size:0.8125rem;">${labelTags}:</span><div class="meta-tags-value" style="display:flex;gap:0.3rem;">${tags}</div></div>` : ''}
-                            <div class="author-badge" onclick="copyAuthorEmail(this)" title="koala.fiona.gao@gmail.com"><span style="opacity:0.9;font-size:0.85rem;">🐨</span><span class="author-text">Fiona Gao</span></div>
-                        </div>
-                        <div class="meta-right"><a href="https://koalafionagao-ai.github.io/my_blogs/" target="_blank" class="meta-text-link">🏠 ${labelHome}</a></div>
-                    </div>
-                    <div class="meta-row" style="color: #6b7280; font-size: 0.8125rem;">
-                        <div class="meta-left" style="gap: 1.25rem;">
-                            ${cTime ? `<div style="display:flex;align-items:center;gap:0.35rem;"><svg style="width:14px;height:14px;opacity:0.6;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><span style="font-weight:600;color:#4b5563;">${labelCreated}:</span> <span class="meta-ctime-value" style="color: #1f2937;">${cTime}</span></div>` : ''}
-                            ${uTime ? `<div style="display:flex;align-items:center;gap:0.35rem;"><svg style="width:14px;height:14px;opacity:0.6;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span style="font-weight:600;color:#4b5563;">${labelUpdated}:</span> <span class="meta-utime-value" style="color: #1f2937;">${uTime}</span></div>` : ''}
-                        </div>
-                        <div class="meta-right"><span class="meta-text-link" onclick="togglePageLanguage()">${translateIcon} ${labelLang}</span></div>
+                // 💡 修复：完美双语脚部版权与免责声明
+                const footer = doc.createElement('footer'); footer.className = 'custom-blog-footer'; footer.innerHTML = `<div class="copyright-row">© 2026 <a href="mailto:koala.fiona.gao@gmail.com" class="footer-author-link">Fiona Gao</a>. ${isEn ? 'All Rights Reserved.' : '原创文章，保留所有权利。'}</div><div class="legal-row"><strong>${isEn ? 'LEGAL DISCLAIMER:' : '法律声明：'}</strong> ${isEn ? 'All content is original. Unauthorized reproduction or commercial use is strictly prohibited.' : '本文为原创内容。未经书面许可，严禁任何形式的未经授权转载或商业使用。'}</div>`;
+                (doc.querySelector('.page-body') || doc.body).appendChild(footer);
+
+                // 💡 右侧悬浮目录容器 (精简版：剥离移动端杂余DOM，极致纯净无标题栏)
+                const tocContainer = doc.createElement('div');
+                tocContainer.className = 'toc-wrapper';
+                tocContainer.innerHTML = `
+                    <div class="toc-content">
+                        <div class="js-toc"></div>
                     </div>
                 `;
+                doc.body.appendChild(tocContainer);
 
-                if (h1) {
-                    h1.style.marginBottom = "0.5rem";
-                    h1.after(metaContainer);
-                } else {
-                    doc.body.prepend(metaContainer);
-                }
-
-                const footer = doc.createElement('footer');
-                footer.className = 'custom-blog-footer';
-                footer.innerHTML = `<div class="copyright-row">© 2026 <a href="mailto:koala.fiona.gao@gmail.com" class="footer-author-link">Fiona Gao</a>. ${isEn ? 'All Rights Reserved.' : '原创文章，保留所有权利。'}</div><div class="legal-row"><strong>LEGAL DISCLAIMER:</strong> ${isEn ? 'All content is original. Unauthorized reproduction or commercial use is strictly prohibited.' : '本文为原创内容。未经书面许可，严禁任何形式的未经授权转载或商业使用。'}</div>`;
-                const bodyContainer = doc.querySelector('.page-body') || doc.body;
-                bodyContainer.appendChild(footer);
-
+                // 💡 隔离滚动域防止代码块越界
                 doc.querySelectorAll('pre.code').forEach(pre => {
-                    const code = pre.querySelector('code');
-                    let lang = 'CODE';
-                    if (code && code.className) {
-                        const m = code.className.match(/language-([a-zA-Z0-9]+)/);
-                        if (m) lang = m[1];
-                    }
-                    if (!pre.querySelector('.copy-code-btn')) {
-                        const copyBtn = doc.createElement('button');
-                        copyBtn.className = 'copy-code-btn';
-                        copyBtn.title = isEn ? 'Copy code' : '复制代码';
-                        copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-                        copyBtn.setAttribute('onclick', 'copyCodeText(this)');
-                        pre.appendChild(copyBtn);
-                        const label = doc.createElement('div');
-                        label.className = 'code-lang-label';
-                        label.textContent = lang;
-                        pre.appendChild(label);
+                    const code = pre.querySelector('code'); let lang = 'CODE'; if (code && code.className) { const m = code.className.match(/language-([a-zA-Z0-9]+)/); if (m) lang = m[1]; }
+                    if (!pre.parentElement.classList.contains('code-wrapper')) {
+                        const wrapper = doc.createElement('div');
+                        wrapper.className = 'code-wrapper';
+                        pre.parentNode.insertBefore(wrapper, pre);
+                        wrapper.appendChild(pre);
+
+                        const copyBtn = doc.createElement('button'); copyBtn.className = 'copy-code-btn'; copyBtn.title = isEn ? 'Copy code' : '复制代码'; copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`; copyBtn.setAttribute('onclick', 'copyCodeText(this)'); wrapper.appendChild(copyBtn);
+                        const label = doc.createElement('div'); label.className = 'code-lang-label'; label.textContent = lang; wrapper.appendChild(label);
                     }
                 });
-
-                // ==========================================
-                // 🚀 社交媒体分享卡片注入 (OG Tags)
-                // ==========================================
-                const fallbackImages = [
-                    "https://images.unsplash.com/photo-1646583288948-24548aedffd8?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-                    "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=2232&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-                    "https://images.unsplash.com/photo-1638342863994-ae4eee256688?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-                    "https://images.unsplash.com/photo-1546074177-ffdda98d214f?q=80&w=1674&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                ];
-
-                let ogImageUrl = "";
-                currentSelectedImageName = "";
-                if (globalProcessedImages.length > 0) {
-                    const MAX_THUMBNAIL_SIZE = 500 * 1024;
-                    // 在已转码的 WebP 图库中，智能挑选一张体积不超过 500KB、且最小的图片作为分享首图
-                    let candidates = globalProcessedImages.filter(img => img.newSize <= MAX_THUMBNAIL_SIZE);
-                    if (candidates.length > 0) {
-                        candidates.sort((a, b) => a.newSize - b.newSize);
-                        ogImageUrl = cdnBaseUrl + encodeURIComponent(candidates[0].name);
-                        currentSelectedImageName = candidates[0].name;
-                    } else {
-                        ogImageUrl = cdnBaseUrl + encodeURIComponent(globalProcessedImages[0].name);
-                        currentSelectedImageName = globalProcessedImages[0].name;
-                    }
-                } else {
-                    let randomIdx = Math.floor(Math.random() * fallbackImages.length);
-                    ogImageUrl = fallbackImages[randomIdx];
-                    currentSelectedImageName = t('defaultImageName') + " " + (randomIdx + 1);
-                }
 
                 const pageTitleRaw = h1 ? h1.textContent.trim() : (doc.querySelector('title') ? doc.querySelector('title').textContent : "Fiona Gao's Blog");
                 const descNode = doc.querySelector('.page-description');
                 const pageDescRaw = descNode && descNode.textContent.trim() !== "" ? descNode.textContent.trim() : (isEn ? "Discover insights and stories on Fiona Gao's technical blog." : "探索 Fiona Gao 的技术博客，获取最新洞察与分享。");
 
                 const metaTagsHtml = `
-    <!-- SEO & Social Media Meta Tags Auto-Injected -->
-    <meta name="description" content="${pageDescRaw.replace(/"/g, '&quot;')}">
-    <meta property="og:title" content="${pageTitleRaw.replace(/"/g, '&quot;')}">
-    <meta property="og:description" content="${pageDescRaw.replace(/"/g, '&quot;')}">
-    <meta property="og:image" content="${ogImageUrl}">
-    <meta property="og:type" content="article">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="${pageTitleRaw.replace(/"/g, '&quot;')}">
-    <meta name="twitter:description" content="${pageDescRaw.replace(/"/g, '&quot;')}">
-    <meta name="twitter:image" content="${ogImageUrl}">`;
-                
+<meta name="description" content="${pageDescRaw.replace(/"/g, '&quot;')}">
+<meta property="og:title" content="${pageTitleRaw.replace(/"/g, '&quot;')}">
+<meta property="og:description" content="${pageDescRaw.replace(/"/g, '&quot;')}">
+<meta property="og:image" content="${ogImageUrl}">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${pageTitleRaw.replace(/"/g, '&quot;')}">
+<meta name="twitter:description" content="${pageDescRaw.replace(/"/g, '&quot;')}">
+<meta name="twitter:image" content="${ogImageUrl}">`;
                 doc.head.insertAdjacentHTML('beforeend', metaTagsHtml);
 
                 const scripts = doc.createElement('script');
@@ -875,82 +733,76 @@
                     function copyCodeText(btn) { const code = btn.parentElement.querySelector('code'); navigator.clipboard.writeText(code.innerText).then(() => { const originalHtml = btn.innerHTML; btn.innerHTML = "✅"; btn.style.background = "transparent"; btn.style.border = "none"; setTimeout(() => { btn.innerHTML = originalHtml; btn.style.background = ""; btn.style.border = ""; }, 2000); }); } 
                     function togglePageLanguage() { let url = window.location.href; if (url.includes('/en/')) window.location.href = url.replace('/en/', '/zh/'); else if (url.includes('/zh/')) window.location.href = url.replace('/zh/', '/en/'); else alert("${isEn ? 'Language path not found.' : '未在 URL 中检测到语言路径。'}"); }
                     
-                    // 🚀 智能地域网络分发引擎 (修复版：简单粗暴直接替换 + onerror容灾)
+                    // 🚀 智能地域网络分发引擎
                     (function() {
                         try {
-                            // 放弃脆弱的时区字符串匹配，改用 UTC+8 偏移量（-480分钟），精准覆盖中国区
                             var isUTC8 = new Date().getTimezoneOffset() === -480;
                             if (isUTC8) {
                                 document.querySelectorAll('img[data-cdn]').forEach(function(img) {
-                                    // 方案二核心：直接替换为国内加速 CDN，简单粗暴最有效，完美保留 Lazy Load
                                     img.src = img.getAttribute('data-cdn');
-                                    // 容灾：如果 CDN 挂了，切回原生路径
-                                    img.onerror = function() {
-                                        if (this.src !== this.getAttribute('data-native')) {
-                                            this.src = this.getAttribute('data-native');
-                                        }
-                                    };
+                                    img.onerror = function() { if (this.src !== this.getAttribute('data-native')) this.src = this.getAttribute('data-native'); };
                                 });
                             }
                         } catch(e) {}
                     })();
+                    
+                    // 🌟 新增：初始化悬浮目录 (Tocbot)
+                    window.addEventListener('DOMContentLoaded', function() {
+                        if (typeof tocbot !== 'undefined') {
+                            tocbot.init({
+                                tocSelector: '.js-toc',
+                                contentSelector: document.querySelector('.page-body') ? '.page-body' : 'body',
+                                headingSelector: 'h1, h2, h3',
+                                hasInnerContainers: true,
+                                scrollSmooth: true,
+                                scrollSmoothOffset: -40,
+                                headingsOffset: 40,
+                                collapseDepth: 6 
+                            });
+                        }
+                    });
                 `;
                 doc.body.appendChild(scripts);
                 
-                if (!doc.querySelector('link[href*="prism-tomorrow"]')) {
-                    const l = doc.createElement('link'); l.rel='stylesheet'; l.href='https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css';
-                    doc.head.appendChild(l);
-                }
+                if (!doc.querySelector('link[href*="prism-tomorrow"]')) { const l = doc.createElement('link'); l.rel='stylesheet'; l.href='https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css'; doc.head.appendChild(l); }
                 const p1 = doc.createElement('script'); p1.src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js'; doc.body.appendChild(p1);
                 const p2 = doc.createElement('script'); p2.src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js'; doc.body.appendChild(p2);
 
-                const finalHtml = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
-                document.getElementById('outputHtml').value = finalHtml;
+                // 💡 【新增】注入 Tocbot 依赖
+                const tocCss = doc.createElement('link'); tocCss.rel='stylesheet'; tocCss.href='https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.21.2/tocbot.css'; doc.head.appendChild(tocCss);
+                const tocJs = doc.createElement('script'); tocJs.src='https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.21.2/tocbot.min.js'; doc.body.appendChild(tocJs);
+
+                finalOutputString = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
                 
-                // 渲染界面 WebP 清单 (展示图片压缩及路径替换的双重功能)
+                document.getElementById('seoDescriptionInput').value = pageDescRaw;
+
+                document.getElementById('outputCode').value = finalOutputString;
+
                 const listContainer = document.getElementById('replacedImageList');
                 const previewBtn = document.getElementById('previewWebpBtn');
                 const downloadBtn = document.getElementById('downloadWebpBtn');
 
                 if (globalProcessedImages.length > 0) {
-                    previewBtn.classList.remove('hidden');
-                    downloadBtn.classList.remove('hidden');
+                    previewBtn.classList.remove('hidden'); downloadBtn.classList.remove('hidden');
+                    const itemI18nStr = t('pathReplacedItem');
                     listContainer.innerHTML = globalProcessedImages.map((img, i) => `
                         <li class="flex flex-col text-sm p-2 bg-white rounded border border-green-100 shadow-sm cursor-pointer hover:bg-gray-50 transition" onclick="openGallery(${i})">
                             <div class="flex items-center justify-between mb-1">
-                                <div class="flex items-center truncate">
-                                    <span class="text-green-500 mr-1.5 text-base">⚡</span>
-                                    <span class="truncate font-mono font-medium">${img.name}</span>
-                                </div>
-                                <div class="flex items-center flex-shrink-0 ml-2">
-                                    <span class="text-xs text-gray-400 font-mono line-through">${(img.oldSize/1024).toFixed(0)}K</span>
-                                    <span class="text-xs font-bold text-green-600 font-mono ml-1">⬇ ${(img.newSize/1024).toFixed(0)}K</span>
-                                </div>
+                                <div class="flex items-center truncate"><span class="text-green-500 mr-1.5 text-base">⚡</span><span class="truncate font-mono font-medium">${img.name}</span></div>
+                                <div class="flex items-center flex-shrink-0 ml-2"><span class="text-xs text-gray-400 font-mono line-through">${(img.oldSize/1024).toFixed(0)}K</span><span class="text-xs font-bold text-green-600 font-mono ml-1">⬇ ${(img.newSize/1024).toFixed(0)}K</span></div>
                             </div>
-                            <div class="flex items-center text-xs text-blue-600 truncate opacity-80 pl-1">
-                                <span class="mr-1 text-sm">🔗</span>
-                                <span class="truncate" data-i18n-dynamic="pathReplacedItem">${t('pathReplacedItem')}</span>
-                            </div>
+                            <div class="flex items-center text-xs text-blue-600 truncate opacity-80 pl-1"><span class="mr-1 text-sm">🔗</span><span class="truncate" data-i18n-dynamic="pathReplacedItem">${itemI18nStr}</span></div>
                         </li>
                     `).join('');
                 } else if (replacedImages.length > 0) {
-                    previewBtn.classList.add('hidden');
-                    downloadBtn.classList.add('hidden');
-                    listContainer.innerHTML = replacedImages.map(n => `
-                        <li class="flex items-center text-sm p-1.5 bg-white rounded border border-blue-100 shadow-sm">
-                            <span class="text-blue-500 mr-2 text-lg">🔗</span>
-                            <span class="truncate font-mono">${n}</span>
-                        </li>
-                    `).join('');
+                    previewBtn.classList.add('hidden'); downloadBtn.classList.add('hidden');
+                    listContainer.innerHTML = replacedImages.map(n => `<li class="flex items-center text-sm p-1.5 bg-white rounded border border-blue-100 shadow-sm"><span class="text-blue-500 mr-2 text-lg">🔗</span><span class="truncate font-mono">${n}</span></li>`).join('');
                 } else {
-                    previewBtn.classList.add('hidden');
-                    downloadBtn.classList.add('hidden');
+                    previewBtn.classList.add('hidden'); downloadBtn.classList.add('hidden');
                     listContainer.innerHTML = `<li class="text-gray-400 text-center text-xs p-4 italic">${t('noImages')}</li>`;
                 }
 
-                // 渲染第四步：社交分享缩略图选择器 (文章图片 + 默认兜底图大融合)
                 const step4Container = document.getElementById('thumbnailGrid');
-                
                 let articleImagesHtml = "";
                 if (globalProcessedImages.length > 0) {
                     articleImagesHtml = globalProcessedImages.map((img) => {
@@ -962,10 +814,7 @@
                             <div class="thumbnail-item cursor-pointer rounded-lg border-2 ${borderClass} overflow-hidden hover:opacity-90 transition relative bg-gray-100 flex flex-col"
                                  onclick="updateThumbnail(this, '${imgUrl}', '${img.name.replace(/'/g, "\\'")}')">
                                 <img src="${img.dataUrl}" class="w-full h-20 object-cover">
-                                <div class="flex flex-col bg-white p-1.5 flex-grow justify-center">
-                                    <div class="text-[10px] truncate text-center text-gray-600 font-mono" title="${img.name}">${img.name}</div>
-                                    <div class="text-[10px] text-center text-green-600 font-mono font-bold mt-0.5">${(img.newSize/1024).toFixed(0)}K</div>
-                                </div>
+                                <div class="flex flex-col bg-white p-1.5 flex-grow justify-center"><div class="text-[10px] truncate text-center text-gray-600 font-mono" title="${img.name}">${img.name}</div><div class="text-[10px] text-center text-green-600 font-mono font-bold mt-0.5">${(img.newSize/1024).toFixed(0)}K</div></div>
                                 ${checkmarkHtml}
                             </div>
                         `;
@@ -980,68 +829,75 @@
                     return `
                         <div class="thumbnail-item cursor-pointer rounded-lg border-2 ${borderClass} overflow-hidden hover:opacity-90 transition relative bg-gray-100 flex flex-col"
                              onclick="updateThumbnail(this, '${url}', '${imgName}')">
-                            <img src="${url}" class="w-full h-20 object-cover">
-                            <div class="flex flex-col bg-white p-1.5 flex-grow justify-center">
-                                <div class="text-[10px] truncate text-center text-gray-600 font-mono" title="${imgName}">${imgName}</div>
-                                <div class="text-[10px] text-center text-indigo-500 font-mono font-bold mt-0.5">Unsplash</div>
-                            </div>
-                            ${checkmarkHtml}
+                            <img src="${url}" class="w-full h-20 object-cover"><div class="flex flex-col bg-white p-1.5 flex-grow justify-center"><div class="text-[10px] truncate text-center text-gray-600 font-mono" title="${imgName}">${imgName}</div><div class="text-[10px] text-center text-indigo-500 font-mono font-bold mt-0.5">Unsplash</div></div>${checkmarkHtml}
                         </div>
                     `;
                 }).join('');
 
                 step4Container.innerHTML = articleImagesHtml + fallbackImagesHtml;
-                
                 document.getElementById('step4SelectedStatus').innerHTML = t('currentThumbPrefix') + `<span class="text-purple-600 font-bold">${currentSelectedImageName}</span> ✅`;
                 document.getElementById('step4SelectedStatus').classList.remove('hidden');
-
-                // 渲染第五步：初始化 SEO 描述内容
-                document.getElementById('seoDescriptionInput').value = pageDescRaw;
                 
                 showStatus('success', 'text-green-600');
-                resultSection.classList.remove('hidden');
-                document.getElementById('step4Section').classList.remove('hidden');
-                document.getElementById('step5Section').classList.remove('hidden');
-                setTimeout(() => {
-                    resultSection.classList.add('opacity-100');
-                    document.getElementById('step4Section').classList.add('opacity-100');
-                    document.getElementById('step5Section').classList.add('opacity-100');
-                }, 50);
+                resultSection.classList.remove('hidden'); document.getElementById('step4Section').classList.remove('hidden'); document.getElementById('step5Section').classList.remove('hidden');
+                setTimeout(() => { resultSection.classList.add('opacity-100'); document.getElementById('step4Section').classList.add('opacity-100'); document.getElementById('step5Section').classList.add('opacity-100'); }, 50);
             } catch (e) { console.error(e); showStatus('errParse', 'text-red-600'); }
         }
 
         function showStatus(k, c) { statusMsg.innerHTML = t(k); statusMsg.className = `mt-4 text-center text-sm font-medium ${c}`; statusMsg.classList.remove('hidden'); }
-        document.getElementById('copyBtn').addEventListener('click', function() { const area = document.getElementById('outputHtml'); area.select(); document.execCommand('copy'); const originalText = this.innerHTML; this.innerHTML = "✅ " + t('copied').split('！')[0]; this.classList.add('bg-green-100', 'text-green-700'); setTimeout(() => { this.innerHTML = originalText; this.classList.remove('bg-green-100', 'text-green-700'); }, 2000); });
-        document.getElementById('previewBtn').addEventListener('click', function() { const htmlContent = document.getElementById('outputHtml').value; if (!htmlContent) return; const parser = new DOMParser(); const doc = parser.parseFromString(htmlContent, "text/html"); doc.querySelectorAll('img').forEach(img => { const src = img.getAttribute('src'); if (src && !src.startsWith('http') && !src.startsWith('data:')) { const msg = t('pathUpdated') + src; const svgStr = `<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100' style='background:#f3f4f6; border: 2px dashed #10b981;'><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12px' fill='#047857'>${msg}</text></svg>`; img.setAttribute('src', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr)); if (img.parentElement.tagName === 'A') { img.parentElement.removeAttribute('href'); img.parentElement.style.cursor = 'default'; } } }); const blob = new Blob(["<!DOCTYPE html>\n" + doc.documentElement.outerHTML], { type: 'text/html;charset=utf-8' }); window.open(URL.createObjectURL(blob), '_blank'); });
+        
+        document.getElementById('copyBtn').addEventListener('click', function() { const area = document.getElementById('outputCode'); area.select(); document.execCommand('copy'); const originalText = this.innerHTML; this.innerHTML = "✅ " + t('copied').split('！')[0]; this.classList.add('bg-green-100', 'text-green-700'); setTimeout(() => { this.innerHTML = originalText; this.classList.remove('bg-green-100', 'text-green-700'); }, 2000); });
+        
+        document.getElementById('previewBtn').addEventListener('click', function() { 
+            const htmlContent = document.getElementById('outputCode').value; 
+            if (!htmlContent) return; 
+            const parser = new DOMParser(); 
+            const doc = parser.parseFromString(htmlContent, "text/html"); 
+            doc.querySelectorAll('img').forEach(img => { 
+                const src = img.getAttribute('src'); 
+                if (src && !src.startsWith('http') && !src.startsWith('data:')) { 
+                    const msg = t('pathUpdated') + src; 
+                    // 稍微增加一点高度保证排版好看
+                    const svgStr = `<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='150' style='background:#f3f4f6; border: 2px dashed #10b981;'><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12px' fill='#047857'>${msg}</text></svg>`; 
+                    img.setAttribute('src', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr)); 
+                    
+                    // 💡 核心元凶修复：移除 data-cdn 属性，防止预览页面的 CDN JS 脚本强行覆盖我们的占位图！
+                    img.removeAttribute('data-cdn');
+                    img.removeAttribute('data-native');
+                    
+                    // 💡 清除模糊滤镜与低清背景，保证绿框占位图清晰展示
+                    img.style.filter = 'none';
+                    img.style.backgroundImage = 'none';
 
-        // --- 第五步：SEO 描述提交更新逻辑 ---
+                    if (img.parentElement.tagName === 'A') { 
+                        img.parentElement.removeAttribute('href'); 
+                        img.parentElement.style.cursor = 'default'; 
+                    } 
+                } 
+            }); 
+            const blob = new Blob(["<!DOCTYPE html>\n" + doc.documentElement.outerHTML], { type: 'text/html;charset=utf-8' }); 
+            window.open(URL.createObjectURL(blob), '_blank'); 
+        });
+
         document.getElementById('submitDescBtn').addEventListener('click', function() {
             const newDesc = document.getElementById('seoDescriptionInput').value.trim().replace(/"/g, '&quot;');
-            let html = document.getElementById('outputHtml').value;
-            if (!html) return;
 
-            // 动态利用正则在代码中进行内容重写
-            html = html.replace(/<meta name="description" content="[^"]*">/, `<meta name="description" content="${newDesc}">`);
-            html = html.replace(/<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${newDesc}">`);
-            html = html.replace(/<meta name="twitter:description" content="[^"]*">/, `<meta name="twitter:description" content="${newDesc}">`);
+            let code = document.getElementById('outputCode').value;
+            if (!code) return;
 
-            document.getElementById('outputHtml').value = html;
+            // HTML 模式更新 SEO
+            code = code.replace(/<meta name="description" content="[^"]*">/, `<meta name="description" content="${newDesc}">`);
+            code = code.replace(/<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${newDesc}">`);
+            code = code.replace(/<meta name="twitter:description" content="[^"]*">/, `<meta name="twitter:description" content="${newDesc}">`);
 
-            // 提交按钮的动态视觉反馈
+            document.getElementById('outputCode').value = code;
+
             const originalBtnHtml = this.innerHTML;
             this.innerHTML = currentLang === 'zh' ? "✅ 更新成功" : "✅ Updated";
-            this.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-            this.classList.add('bg-green-500', 'hover:bg-green-600');
-            
-            const msg = document.getElementById('step5SuccessMsg');
-            msg.classList.remove('hidden');
+            this.classList.remove('bg-yellow-500', 'hover:bg-yellow-600'); this.classList.add('bg-green-500', 'hover:bg-green-600');
+            const msg = document.getElementById('step5SuccessMsg'); msg.classList.remove('hidden');
 
-            setTimeout(() => {
-                this.innerHTML = originalBtnHtml;
-                this.classList.remove('bg-green-500', 'hover:bg-green-600');
-                this.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
-                msg.classList.add('hidden');
-            }, 3000);
+            setTimeout(() => { this.innerHTML = originalBtnHtml; this.classList.remove('bg-green-500', 'hover:bg-green-600'); this.classList.add('bg-yellow-500', 'hover:bg-yellow-600'); msg.classList.add('hidden'); }, 3000);
         });
     </script>
 </body>
