@@ -3,144 +3,376 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notion 博客转换工具 (全能极客版)</title>
+    <title>Notion 博客转换工具 (全能版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .dragover { border-color: #3b82f6 !important; background-color: #eff6ff !important; }
+        :root {
+            --bg-color: #FDFCF8;
+            --text-main: #4A4643;
+            --text-muted: #8E8A86;
+            --accent-color: #A39B8B;
+            --card-bg: #FFFFFF;
+            --border-color: #EBE8E0;
+            --success-color: #10b981;
+            --btn-hover: #f5f4ee;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* === 继承自 Magic Previewer 的头部网格布局 === */
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            color: var(--text-main);
+            margin: 0 0 16px 0;
+            font-weight: 600;
+        }
+
+        .header-desc-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            width: 100%;
+        }
+
+        .header-desc-row p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.5;
+            grid-column: 2; /* 居中显示 */
+        }
+
+        .header-action {
+            grid-column: 3; /* 靠右对齐 */
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .lang-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            font-family: inherit;
+        }
+
+        .lang-btn:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            background: var(--btn-hover);
+        }
+
+        /* === 核心操作面板容器 (分步框) === */
+        .step-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 30px 40px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.02);
+            box-sizing: border-box;
+            margin-bottom: 24px;
+        }
+
+        .step-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+        }
+
+        .step-badge {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 9999px;
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        /* === 表单元素重构 === */
+        .form-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .input-field {
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            border-radius: 8px;
+            padding: 10px 12px;
+            width: 100%;
+            transition: all 0.2s;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .input-field:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(163, 155, 139, 0.1);
+        }
+
+        /* === 统一按钮样式 === */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background-color: var(--text-main);
+            color: var(--card-bg) !important;
+        }
+
+        .btn-primary:hover {
+            background-color: #333;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .btn-secondary {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            border-color: var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--btn-hover);
+            border-color: var(--accent-color);
+        }
+
+        /* === 拖拽上传区 === */
+        .drop-zone {
+            border: 2px dashed var(--border-color);
+            background-color: var(--bg-color);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .drop-zone:hover, .dragover {
+            background-color: var(--btn-hover) !important;
+            border-color: var(--accent-color) !important;
+        }
+
+        /* === 重构 JS 动态生成的 Tailwind 色彩 (CSS 强制接管拦截) === */
+        /* 为了不改动原生 JS，在这里拦截 JS 注入的亮色并映射到高级色板 */
+        .text-blue-600, .text-indigo-600, .text-purple-600, .text-green-500, .text-blue-500 { color: var(--accent-color) !important; }
+        .bg-blue-100, .bg-green-100, .bg-purple-100, .bg-yellow-100 { background-color: var(--btn-hover) !important; color: var(--text-main) !important; border: 1px solid var(--border-color) !important;}
+        .bg-blue-50, .bg-green-50, .bg-gray-100, .bg-white { background-color: var(--card-bg) !important; }
+        .border-blue-200, .border-green-100, .border-green-200, .border-gray-200 { border-color: var(--border-color) !important; }
+        .text-blue-800, .text-green-800 { color: var(--text-main) !important; }
+        .ring-purple-500 { --tw-ring-color: var(--accent-color) !important; }
+        .bg-purple-500 { background-color: var(--accent-color) !important; }
+        .hover\:bg-gray-50:hover { background-color: var(--btn-hover) !important; }
+        .text-green-600, .text-green-700 { color: var(--success-color) !important; }
+        .bg-green-500, .bg-green-100.text-green-700 { background-color: var(--success-color) !important; color: white !important; border-color: transparent !important; }
+        
         #replacedImageList::-webkit-scrollbar { width: 4px; }
-        #replacedImageList::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+        #replacedImageList::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 10px; }
         .gallery-nav-btn { transition: transform 0.2s, opacity 0.2s; opacity: 0.6; }
         .gallery-nav-btn:hover { transform: scale(1.2); opacity: 1; }
+
+        @media (max-width: 768px) {
+            .header-desc-row {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            .header-action {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .step-container { padding: 24px 20px; }
+            .grid-cols-2 { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-8 relative">
+<body>
 
-    <div class="absolute top-6 right-6 z-20">
-        <button id="langToggle" class="text-gray-500 hover:text-blue-600 transition font-medium text-sm flex items-center gap-1.5 p-2 bg-white/80 rounded-lg backdrop-blur-sm shadow-sm border border-gray-100">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
-            <span id="langToggleText" data-i18n="langBtn">English</span>
-        </button>
-    </div>
-
-    <div class="max-w-5xl mx-auto mt-2 mb-8 text-center">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2" data-i18n="mainTitle">Notion 导出包转换工具</h1>
-        <p class="text-gray-500 text-sm font-medium" data-i18n="subTitle">💡 专为单页 HTML 直出打造，自带中国区加速黑科技与全局样式排版。</p>
-    </div>
-
-    <div class="max-w-5xl mx-auto space-y-8">
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-                <span class="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center mr-3">1</span>
-                <span data-i18n="step1Title">配置统一图片路径与 CDN 加速</span>
-            </h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div class="flex flex-col space-y-1.5">
-                    <label for="githubUser" class="text-sm text-gray-600 font-medium" data-i18n="step1GithubUser">GitHub 用户名</label>
-                    <input type="text" id="githubUser" value="koalafionagao-ai" class="border border-gray-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full transition-colors">
-                </div>
-                <div class="flex flex-col space-y-1.5">
-                    <label for="githubRepo" class="text-sm text-gray-600 font-medium" data-i18n="step1GithubRepo">仓库名称</label>
-                    <input type="text" id="githubRepo" value="my_blogs" class="border border-gray-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full transition-colors">
-                </div>
+    <!-- === 居中标题与同行对齐描述区 === -->
+    <div class="page-header">
+        <h1 id="pageTitle" data-i18n="mainTitle">Notion 导出包转换工具</h1>
+        <div class="header-desc-row">
+            <div class="header-spacer"></div>
+            <p id="pageDesc" data-i18n="subTitle">💡 专为单页 HTML 直出打造，自带中国区加速黑科技与全局样式排版。</p>
+            <div class="header-action">
+                <button class="lang-btn" id="langToggle">
+                    <span style="font-weight: 600; margin-right: 2px;">A/文</span> <span id="langToggleText" data-i18n="langBtn">English</span>
+                </button>
             </div>
+        </div>
+    </div>
 
-            <div class="flex flex-col space-y-1.5">
-                <label for="imagePath" class="text-sm text-gray-600">
-                    <span id="pathInputLabel" data-i18n="step1Label">你需要将图片推送到仓库的哪个路径下？（此项用于拼接最终代码里的图片链接）</span><br>
-                    <span id="pathInputHint" class="text-blue-500 font-medium" data-i18n="step1WarnReq">💡 例如直接填入 /en/my-article/images/</span> 
-                </label>
-                <input type="text" id="imagePath" value="/my_blogs/" data-i18n="step1Placeholder" placeholder="例如: /my_blogs/en/my-article/images/" class="border border-gray-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full transition-colors">
-                <div id="pathWarning" class="hidden text-xs text-orange-600 mt-1 bg-orange-50 p-2 rounded border border-orange-200 w-full" data-i18n="pathWarning">
-                    ⚠️ 您的路径没有以 <code>/</code> 开头！系统会自动在开头补齐。
-                </div>
+    <!-- === Step 1 === -->
+    <div class="step-container">
+        <h2 class="step-title">
+            <span class="step-badge">1</span>
+            <span data-i18n="step1Title">配置统一图片路径与 CDN 加速</span>
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="flex flex-col">
+                <label for="githubUser" class="form-label" data-i18n="step1GithubUser">GitHub 用户名</label>
+                <input type="text" id="githubUser" value="koalafionagao-ai" class="input-field">
+            </div>
+            <div class="flex flex-col">
+                <label for="githubRepo" class="form-label" data-i18n="step1GithubRepo">仓库名称</label>
+                <input type="text" id="githubRepo" value="my_blogs" class="input-field">
             </div>
         </div>
 
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-                <span class="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center mr-3">2</span>
-                <span id="step2Title" data-i18n="step2Title">拖拽 Notion 导出的 ZIP 或 HTML 文件</span>
-            </h2>
-            <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center cursor-pointer transition-colors duration-200 hover:bg-gray-50 flex flex-col items-center justify-center">
-                <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                <p id="dropText" class="text-gray-600 mb-2" data-i18n="dropText">将 Notion 导出的 <strong>.zip</strong> 或 <strong>.html</strong> 文件拖拽到这里</p>
-                <p class="text-sm text-gray-400" data-i18n="browseText">或者点击选择文件</p>
-                <input type="file" id="fileInput" accept=".zip,.html,.htm" class="hidden">
+        <div class="flex flex-col">
+            <label for="imagePath" class="form-label">
+                <span id="pathInputLabel" data-i18n="step1Label">你需要将图片推送到仓库的哪个路径下？（此项用于拼接最终代码里的图片链接）</span><br>
+                <span id="pathInputHint" class="text-[var(--accent-color)] mt-1 inline-block" data-i18n="step1WarnReq">💡 例如直接填入 /en/my-article/images/</span> 
+            </label>
+            <input type="text" id="imagePath" value="/my_blogs/" data-i18n="step1Placeholder" placeholder="例如: /my_blogs/en/my-article/images/" class="input-field">
+            <div id="pathWarning" class="hidden text-xs text-[#ef4444] mt-2 p-2 rounded bg-[#ef4444]/10 border border-[#ef4444]/20 w-full" data-i18n="pathWarning">
+                ⚠️ 您的路径没有以 <code>/</code> 开头！系统会自动在开头补齐。
             </div>
-            <div id="fileInfoArea" class="hidden mt-4 flex items-center justify-between bg-blue-50 border border-blue-200 p-3 rounded-lg transition-all">
-                <div class="flex items-center text-sm text-blue-800 overflow-hidden pr-2">
-                    <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    <span data-i18n="currentFileLabel" class="font-medium mr-2 whitespace-nowrap">当前文件:</span>
-                    <span id="currentFileName" class="truncate font-mono font-semibold"></span>
-                </div>
-                <button id="reprocessBtn" class="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition shadow-sm" data-i18n="reprocessBtn">🔄 重新处理</button>
-            </div>
-            <div id="statusMsg" class="mt-4 text-center hidden text-sm font-medium"></div>
         </div>
+    </div>
 
-        <div id="resultSection" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hidden opacity-0 transition-opacity duration-500">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-                <span class="bg-green-100 text-green-600 rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center mr-3">3</span>
-                <span data-i18n="step3Title">处理完成！</span>
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="flex flex-col h-full md:col-span-2">
-                    <div class="flex justify-between items-center mb-2">
-                        <label id="codeOutputLabel" class="font-medium text-gray-700" data-i18n="htmlLabel">已完成样式模板化、CDN 注入与懒加载优化的 HTML：</label>
-                        <div class="space-x-2 flex">
-                            <button id="downloadCodeBtn" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded text-sm transition font-medium" data-i18n="downloadHtmlBtn">⬇️ 下载文件</button>
-                            <button id="previewBtn" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded text-sm transition font-medium" data-i18n="previewBtn">👁️ 预览样式</button>
-                            <button id="copyBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm transition font-medium" data-i18n="copyBtn">📋 复制全部</button>
-                        </div>
+    <!-- === Step 2 === -->
+    <div class="step-container">
+        <h2 class="step-title">
+            <span class="step-badge">2</span>
+            <span id="step2Title" data-i18n="step2Title">拖拽 Notion 导出的 ZIP 或 HTML 文件</span>
+        </h2>
+        <div id="dropZone" class="drop-zone flex flex-col items-center justify-center">
+            <svg class="w-12 h-12 text-[var(--accent-color)] mb-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <p id="dropText" class="text-[var(--text-main)] mb-2 text-base font-medium" data-i18n="dropText">将 Notion 导出的 <strong>.zip</strong> 或 <strong>.html</strong> 文件拖拽到这里</p>
+            <p class="text-sm text-[var(--text-muted)]" data-i18n="browseText">或者点击选择文件</p>
+            <input type="file" id="fileInput" accept=".zip,.html,.htm" class="hidden">
+        </div>
+        <div id="fileInfoArea" class="hidden mt-4 flex items-center justify-between bg-[var(--bg-color)] border border-[var(--border-color)] p-3 rounded-lg transition-all">
+            <div class="flex items-center text-sm text-[var(--text-main)] overflow-hidden pr-2">
+                <svg class="w-5 h-5 mr-2 flex-shrink-0 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <span data-i18n="currentFileLabel" class="font-medium mr-2 whitespace-nowrap text-[var(--text-muted)]">当前文件:</span>
+                <span id="currentFileName" class="truncate font-mono font-semibold"></span>
+            </div>
+            <button id="reprocessBtn" class="btn btn-primary" data-i18n="reprocessBtn">🔄 重新处理</button>
+        </div>
+        <div id="statusMsg" class="mt-4 text-center hidden text-sm font-medium"></div>
+    </div>
+
+    <!-- === Step 3 === -->
+    <div id="resultSection" class="step-container hidden opacity-0 transition-opacity duration-500">
+        <h2 class="step-title">
+            <span class="step-badge" style="background: var(--success-color); color: white; border-color: var(--success-color);">3</span>
+            <span data-i18n="step3Title">处理完成！</span>
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="flex flex-col h-full md:col-span-2">
+                <div class="flex justify-between items-center mb-2 flex-wrap gap-2">
+                    <label id="codeOutputLabel" class="form-label mb-0" data-i18n="htmlLabel">已完成样式模板化、CDN 注入与懒加载优化的 HTML：</label>
+                    <div class="space-x-2 flex">
+                        <button id="downloadCodeBtn" class="btn btn-secondary text-xs px-3 py-1.5" data-i18n="downloadHtmlBtn">⬇️ 下载文件</button>
+                        <button id="previewBtn" class="btn btn-secondary text-xs px-3 py-1.5" data-i18n="previewBtn">👁️ 预览样式</button>
+                        <button id="copyBtn" class="btn btn-secondary text-xs px-3 py-1.5" data-i18n="copyBtn">📋 复制全部</button>
                     </div>
-                    <textarea id="outputCode" readonly class="w-full flex-grow border border-gray-300 rounded-lg p-4 bg-gray-50 font-mono text-xs focus:outline-none min-h-[350px] resize-y"></textarea>
                 </div>
-                <div class="flex flex-col h-full bg-green-50/50 border border-green-100 rounded-lg p-4">
-                    <div class="flex justify-between items-center mb-3 border-b border-green-200 pb-2">
-                        <h3 class="text-sm font-bold text-green-800 flex items-center">
-                            <svg class="w-5 h-5 text-green-600 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                            <span data-i18n="listTitle">图片路径替换与 WebP 压缩包</span>
-                        </h3>
-                        <div class="space-x-1.5 flex">
-                            <button id="previewWebpBtn" onclick="openGallery(0)" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-2 py-1 rounded text-xs transition font-medium shadow-sm items-center hidden" data-i18n="previewWebpBtn">🖼️ 预览</button>
-                            <button id="downloadWebpBtn" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs transition font-medium shadow-sm items-center hidden" data-i18n="downloadWebpBtn">📦 下载</button>
-                        </div>
+                <textarea id="outputCode" readonly class="input-field font-mono text-[13px] min-h-[350px] resize-y flex-grow mt-1"></textarea>
+            </div>
+            <div class="flex flex-col h-full bg-[var(--bg-color)] border border-[var(--border-color)] rounded-lg p-4">
+                <div class="flex justify-between items-center mb-3 border-b border-[var(--border-color)] pb-3">
+                    <h3 class="text-sm font-bold text-[var(--text-main)] flex items-center">
+                        <svg class="w-4 h-4 text-[var(--accent-color)] mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span data-i18n="listTitle">路径替换与压缩包</span>
+                    </h3>
+                    <div class="space-x-1.5 flex">
+                        <button id="previewWebpBtn" onclick="openGallery(0)" class="btn btn-secondary text-xs px-2 py-1 hidden" data-i18n="previewWebpBtn">🖼️ 预览</button>
+                        <button id="downloadWebpBtn" class="btn btn-primary text-xs px-2 py-1 hidden" data-i18n="downloadWebpBtn">📦 下载</button>
                     </div>
-                    <ul id="replacedImageList" class="overflow-y-auto flex-grow max-h-[320px] pr-2 space-y-2"></ul>
                 </div>
+                <ul id="replacedImageList" class="overflow-y-auto flex-grow max-h-[320px] pr-2 space-y-2"></ul>
             </div>
-        </div>
-
-        <div id="step4Section" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hidden opacity-0 transition-opacity duration-500">
-            <h2 class="text-xl font-semibold mb-2 text-gray-800 flex items-center">
-                <span class="bg-purple-100 text-purple-600 rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center mr-3">4</span>
-                <span data-i18n="step4Title">选择社交分享缩略图 (封面图)</span>
-            </h2>
-            <p class="text-sm text-gray-500 mb-2 ml-11" id="step4Desc" data-i18n="step4Desc">点击选择一张图片作为微信/Twitter的分享卡片首图。您可以选择文章内的图片，或直接使用精美的默认壁纸。</p>
-            <p class="text-sm mb-4 ml-11 hidden" id="step4SelectedStatus"></p>
-            <div id="thumbnailGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 ml-11">
-                </div>
-        </div>
-
-        <div id="step5Section" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hidden opacity-0 transition-opacity duration-500">
-            <h2 class="text-xl font-semibold mb-2 text-gray-800 flex items-center">
-                <span class="bg-yellow-100 text-yellow-600 rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center mr-3">5</span>
-                <span data-i18n="step5Title">完善文章元数据 (Meta 标签)</span>
-            </h2>
-            <p class="text-sm text-gray-500 mb-4 ml-11" id="step5Desc" data-i18n="step5Desc">填写以下信息，工具会自动将它们注入到代码 HTML 的 head 中，用于展示和 SEO。</p>
-            <div class="ml-11 flex flex-col gap-4">
-                <div class="flex flex-col sm:flex-row items-start sm:items-start gap-3">
-                    <label class="text-sm text-gray-700 font-medium whitespace-nowrap min-w-[80px] mt-2" data-i18n="descLabel">SEO 摘要:</label>
-                    <textarea id="seoDescriptionInput" rows="2" data-i18n-placeholder="descPlaceholder" class="flex-grow w-full border border-gray-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm transition-colors shadow-sm" placeholder="请输入文章描述摘要..."></textarea>
-                    <button id="submitDescBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm whitespace-nowrap flex items-center flex-shrink-0 h-[62px]" data-i18n="submitDescBtn">✅ 提交更新</button>
-                </div>
-            </div>
-            <p id="step5SuccessMsg" class="text-sm text-green-600 font-medium mt-3 ml-11 hidden" data-i18n="step5SuccessMsg">✅ 提交成功，代码已更新！请前往第三步下载或复制文件。</p>
         </div>
     </div>
 
+    <!-- === Step 4 === -->
+    <div id="step4Section" class="step-container hidden opacity-0 transition-opacity duration-500">
+        <h2 class="step-title">
+            <span class="step-badge">4</span>
+            <span data-i18n="step4Title">选择社交分享缩略图 (封面图)</span>
+        </h2>
+        <p class="text-sm text-[var(--text-muted)] mb-3 ml-11" id="step4Desc" data-i18n="step4Desc">点击选择一张图片作为微信/Twitter的分享卡片首图。您可以选择文章内的图片，或直接使用精美的默认壁纸。</p>
+        <p class="text-sm mb-4 ml-11 hidden text-[var(--text-main)]" id="step4SelectedStatus"></p>
+        <div id="thumbnailGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 ml-11">
+        </div>
+    </div>
+
+    <!-- === Step 5 === -->
+    <div id="step5Section" class="step-container hidden opacity-0 transition-opacity duration-500">
+        <h2 class="step-title">
+            <span class="step-badge">5</span>
+            <span data-i18n="step5Title">完善文章元数据 (Meta 标签)</span>
+        </h2>
+        <p class="text-sm text-[var(--text-muted)] mb-5 ml-11" id="step5Desc" data-i18n="step5Desc">填写以下信息，工具会自动将它们注入到代码 HTML 的 head 中，用于展示和 SEO。</p>
+        <div class="ml-11 flex flex-col gap-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-start gap-4">
+                <label class="form-label whitespace-nowrap min-w-[80px] mt-2 mb-0" data-i18n="descLabel">SEO 摘要:</label>
+                <textarea id="seoDescriptionInput" rows="2" data-i18n-placeholder="descPlaceholder" class="input-field flex-grow" placeholder="请输入文章描述摘要..."></textarea>
+                <button id="submitDescBtn" class="btn btn-primary flex-shrink-0 h-[62px] px-6" data-i18n="submitDescBtn">✅ 提交更新</button>
+            </div>
+        </div>
+        <p id="step5SuccessMsg" class="text-sm text-[var(--success-color)] font-medium mt-4 ml-11 hidden" data-i18n="step5SuccessMsg">✅ 提交成功，代码已更新！请前往第三步下载或复制文件。</p>
+    </div>
+
+    <!-- === 画廊弹窗 (保留原本深色背景以突显图片) === -->
     <div id="galleryModal" class="fixed inset-0 bg-black/95 z-50 hidden flex-col items-center justify-center backdrop-blur-sm transition-opacity">
         <button onclick="closeGallery()" class="absolute top-5 right-6 text-white text-4xl hover:text-red-400 transition">&times;</button>
         <div class="absolute top-6 left-6 text-white/90 text-sm md:text-base font-medium flex flex-col gap-1">
@@ -148,14 +380,15 @@
             <span id="galleryProgress" class="text-gray-400 font-mono pl-1"></span>
         </div>
         <div class="flex items-center justify-between w-full max-w-6xl px-4 md:px-12 mt-8">
-            <button onclick="prevGalleryImage()" class="gallery-nav-btn text-white text-6xl hover:text-blue-400 p-4 focus:outline-none">&lsaquo;</button>
+            <button onclick="prevGalleryImage()" class="gallery-nav-btn text-white text-6xl hover:text-[var(--accent-color)] p-4 focus:outline-none">&lsaquo;</button>
             <div class="relative group flex items-center justify-center h-[75vh] w-full mx-4">
                 <img id="galleryImage" src="" class="max-h-full max-w-full object-contain rounded-lg shadow-2xl transition-transform duration-300">
             </div>
-            <button onclick="nextGalleryImage()" class="gallery-nav-btn text-white text-6xl hover:text-blue-400 p-4 focus:outline-none">&rsaquo;</button>
+            <button onclick="nextGalleryImage()" class="gallery-nav-btn text-white text-6xl hover:text-[var(--accent-color)] p-4 focus:outline-none">&rsaquo;</button>
         </div>
     </div>
 
+    <!-- ⚠️ 下方为严格保留的原始 JavaScript 逻辑代码 ⚠️ -->
     <script>
         const i18n = {
             zh: {

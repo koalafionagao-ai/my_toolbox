@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic HTML Previewer</title>
+    <style>
+        :root {
+            --bg-color: #FDFCF8;
+            --text-main: #4A4643;
+            --text-muted: #8E8A86;
+            --accent-color: #A39B8B;
+            --card-bg: #FFFFFF;
+            --border-color: #EBE8E0;
+            --success-color: #10b981;
+            --btn-hover: #f5f4ee;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* 页面居中标题区 */
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            color: var(--text-main);
+            margin: 0 0 16px 0;
+            font-weight: 600;
+        }
+
+        /* 描述与操作同行动对齐布局 */
+        .header-desc-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            width: 100%;
+        }
+
+        .header-desc-row p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.5;
+            grid-column: 2; /* 居中显示 */
+        }
+
+        .header-action {
+            grid-column: 3; /* 靠右对齐 */
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .lang-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            font-family: inherit; /* 统一使用全局字体 */
+        }
+
+        .lang-btn:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            background: var(--btn-hover);
+        }
+
+        /* 核心操作面板容器 */
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 30px 40px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.02);
+            box-sizing: border-box;
+        }
+
+        /* 工具栏 (上传与文件信息) */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-upload-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            height: 100%;
+        }
+
+        .btn-upload {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-upload:hover {
+            background: var(--btn-hover);
+            border-color: var(--accent-color);
+        }
+
+        .file-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: var(--bg-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+
+        /* 代码编辑区 */
+        .editor-section {
+            margin-bottom: 24px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 16px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-main);
+            box-sizing: border-box;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(163, 155, 139, 0.1);
+        }
+
+        /* 动作按钮区 */
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background-color: var(--text-main);
+            color: var(--card-bg);
+        }
+
+        .btn-primary:hover {
+            background-color: #333;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .btn-secondary {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            border-color: var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--btn-hover);
+            border-color: var(--accent-color);
+        }
+
+        /* Toast 提示 */
+        .toast {
+            visibility: hidden;
+            min-width: 200px;
+            background-color: var(--success-color);
+            color: white;
+            text-align: center;
+            border-radius: 30px;
+            padding: 10px 20px;
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 0.95rem;
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
+        }
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+
+        @media (max-width: 768px) {
+            .header-desc-row {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            .header-action {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .toolbar { flex-direction: column-reverse; align-items: flex-start; gap: 15px; }
+            .file-upload-wrapper { width: 100%; }
+            .btn-upload { width: 100%; }
+            .actions { flex-direction: column; }
+            .btn { width: 100%; justify-content: center; }
+            .container { padding: 24px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 居中标题与同行对齐描述区 -->
+    <div class="page-header">
+        <h1 id="pageTitle">魔法 HTML 预览器</h1>
+        <div class="header-desc-row">
+            <div class="header-spacer"></div>
+            <p id="pageDesc">💡 专为前端代码打造，支持本地无缝预览、多格式导出与代码一键提取。</p>
+            <div class="header-action">
+                <button class="lang-btn" onclick="toggleLang()" id="langBtn">
+                    <span style="font-weight: 600; margin-right: 2px;">A/文</span> English
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        
+        <div class="toolbar">
+            <span class="file-info" id="fileInfoLabel">未选择文件</span>
+            <div class="file-upload-wrapper">
+                <button class="btn-upload" id="uploadBtnText">📎 上传 TXT / HTML</button>
+                <input type="file" id="fileInput" accept=".txt,.html">
+            </div>
+        </div>
+
+        <div class="editor-section">
+            <textarea id="codeEditor" placeholder="在这里粘贴你的 HTML 代码，或者点击右上角上传文件..."></textarea>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="previewHtml()">
+                <span>👁️</span> <span id="previewBtnText">新标签页预览</span>
+            </button>
+            <button class="btn btn-secondary" onclick="copyCode()">
+                <span>📋</span> <span id="copyBtnText">全选并复制</span>
+            </button>
+            <button class="btn btn-secondary" onclick="downloadFile('txt')">
+                <span>⬇️</span> <span id="downTxtBtnText">下载为 TXT</span>
+            </button>
+            <button class="btn btn-secondary" onclick="downloadFile('html')">
+                <span>⬇️</span> <span id="downHtmlBtnText">下载为 HTML</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="toast">操作成功！</div>
+
+    <script>
+        const editor = document.getElementById('codeEditor');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfoLabel = document.getElementById('fileInfoLabel');
+
+        // 保存当前文件状态
+        let currentFileName = "";
+        let currentFileExt = "";
+
+        // === 多语言配置字典 ===
+        const i18n = {
+            zh: {
+                title: "魔法 HTML 预览器",
+                desc: "💡 专为前端代码打造，支持本地无缝预览、多格式导出与代码一键提取。",
+                langToggle: '<span style="font-weight: 600; margin-right: 2px;">A/文</span> English',
+                upload: "📎 上传 TXT / HTML",
+                fileEmpty: "未选择文件",
+                fileCurrent: "当前文件: {name} ({ext})",
+                placeholder: "在这里粘贴你的 HTML 代码，或者点击上方按钮上传文件...",
+                preview: "新标签页预览",
+                copy: "全选并复制",
+                downTxt: "下载为 TXT",
+                downHtml: "下载为 HTML",
+                msgs: {
+                    readOk: "成功读取文件: ",
+                    previewEmpty: "代码为空，无法预览！",
+                    previewFail: "预览失败，请检查浏览器是否拦截了弹窗！",
+                    copyEmpty: "代码为空，没有什么可复制的~",
+                    copyOk: "代码已全选并复制到剪贴板！",
+                    copyFail: "复制失败，请手动使用快捷键复制",
+                    downEmpty: "代码为空，无法下载文件！",
+                    downOk: "已成功下载 "
+                }
+            },
+            en: {
+                title: "Magic HTML Previewer",
+                desc: "💡 Built for frontend code. Seamless local preview, multi-format export, and 1-click extraction.",
+                langToggle: '<span style="font-weight: 600; margin-right: 2px;">文/A</span> 中文',
+                upload: "📎 Upload TXT / HTML",
+                fileEmpty: "No file selected",
+                fileCurrent: "Current file: {name} ({ext})",
+                placeholder: "Paste your HTML code here, or click the button above to upload a file...",
+                preview: "Preview in New Tab",
+                copy: "Select All & Copy",
+                downTxt: "Download as TXT",
+                downHtml: "Download as HTML",
+                msgs: {
+                    readOk: "Successfully read file: ",
+                    previewEmpty: "Code is empty, cannot preview!",
+                    previewFail: "Preview failed, check if popup is blocked!",
+                    copyEmpty: "Code is empty, nothing to copy~",
+                    copyOk: "Code selected and copied to clipboard!",
+                    copyFail: "Copy failed, please copy manually.",
+                    downEmpty: "Code is empty, cannot download!",
+                    downOk: "Successfully downloaded "
+                }
+            }
+        };
+
+        let currentLang = 'zh';
+
+        // 切换语言函数
+        function toggleLang() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            updateUI();
+        }
+
+        // 更新界面文案
+        function updateUI() {
+            const t = i18n[currentLang];
+            
+            document.getElementById('pageTitle').innerText = t.title;
+            document.getElementById('pageDesc').innerText = t.desc;
+            document.getElementById('langBtn').innerHTML = t.langToggle;
+            document.getElementById('uploadBtnText').innerText = t.upload;
+            document.getElementById('codeEditor').placeholder = t.placeholder;
+            
+            document.getElementById('previewBtnText').innerText = t.preview;
+            document.getElementById('copyBtnText').innerText = t.copy;
+            document.getElementById('downTxtBtnText').innerText = t.downTxt;
+            document.getElementById('downHtmlBtnText').innerText = t.downHtml;
+
+            // 更新文件状态提示
+            if (currentFileName) {
+                fileInfoLabel.textContent = t.fileCurrent.replace('{name}', currentFileName).replace('{ext}', currentFileExt);
+            } else {
+                fileInfoLabel.textContent = t.fileEmpty;
+            }
+        }
+
+        // 1. 处理文件上传
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // 记录文件信息
+            currentFileName = file.name;
+            currentFileExt = currentFileName.split('.').pop().toUpperCase();
+            
+            updateUI(); // 触发 UI 更新文件名称
+            fileInfoLabel.style.display = 'inline-block';
+
+            // 读取文件内容到文本框
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                editor.value = e.target.result;
+                showToast(i18n[currentLang].msgs.readOk + currentFileName);
+            };
+            reader.readAsText(file);
+            
+            fileInput.value = ''; 
+        });
+
+        // 2. 预览 HTML
+        function previewHtml() {
+            const code = editor.value;
+            const msgs = i18n[currentLang].msgs;
+
+            if (!code.trim()) {
+                showToast(msgs.previewEmpty, '#ef4444');
+                return;
+            }
+
+            const blob = new Blob([code], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const newWindow = window.open(url, '_blank');
+            
+            if(!newWindow) {
+                showToast(msgs.previewFail, '#ef4444');
+            }
+        }
+
+        // 3. 复制代码
+        function copyCode() {
+            const msgs = i18n[currentLang].msgs;
+
+            if (!editor.value.trim()) {
+                showToast(msgs.copyEmpty, '#ef4444');
+                return;
+            }
+            
+            editor.select();
+            editor.setSelectionRange(0, 99999);
+
+            navigator.clipboard.writeText(editor.value).then(() => {
+                showToast(msgs.copyOk);
+            }).catch(err => {
+                console.error('复制失败:', err);
+                showToast(msgs.copyFail, '#ef4444');
+            });
+        }
+
+        // 4. 下载文件
+        function downloadFile(ext) {
+            const code = editor.value;
+            const msgs = i18n[currentLang].msgs;
+
+            if (!code.trim()) {
+                showToast(msgs.downEmpty, '#ef4444');
+                return;
+            }
+
+            const fileName = `magic.${ext}`;
+            const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 0);
+
+            showToast(msgs.downOk + fileName);
+        }
+
+        // 辅助函数：显示 Toast
+        function showToast(message, bgColor = 'var(--success-color)') {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.style.backgroundColor = bgColor;
+            
+            toast.classList.add("show");
+            
+            clearTimeout(toast.timer);
+            toast.timer = setTimeout(function(){ 
+                toast.classList.remove("show"); 
+            }, 2500);
+        }
+
+        // 初始化加载一次默认文案
+        updateUI();
+    </script>
+</body>
+</html>
