@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newsletter Parser 调试工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .textarea-code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace; }
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    </style>
+</head>
+<body class="bg-gray-50 h-screen flex flex-col overflow-hidden">
+
+    <!-- 顶部导航栏 -->
+    <header class="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shrink-0 shadow-sm z-10">
+        <div class="flex items-center space-x-3">
+            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+            <h1 class="text-xl font-semibold text-gray-800">Newsletter 提取测试台</h1>
+            <span class="bg-indigo-100 text-indigo-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Techmeme / TLDR 专版 V10 (防误杀优化版)</span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button onclick="loadSampleData('techmeme')" class="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors px-2 py-1 rounded hover:bg-gray-100">加载 Techmeme 示例</button>
+            <button onclick="loadSampleData('tldr')" class="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors px-2 py-1 rounded hover:bg-gray-100">加载 TLDR 示例</button>
+            <div class="w-px h-6 bg-gray-300"></div>
+            <!-- 下载 Python 脚本按钮 -->
+            <button onclick="downloadPythonScript()" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                <span>下载 Python 脚本给 Agent</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="flex-1 flex overflow-hidden relative">
+        <!-- 左侧：输入区 -->
+        <div class="w-1/2 flex flex-col border-r border-gray-200 bg-white z-0">
+            <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center shrink-0">
+                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                    原始邮件 HTML 输入
+                </h2>
+                <button onclick="document.getElementById('htmlInput').value=''" class="text-xs font-medium text-gray-500 hover:text-red-600 transition-colors px-2 py-1 rounded hover:bg-red-50">清空</button>
+            </div>
+            <textarea id="htmlInput" class="textarea-code flex-1 w-full p-4 resize-none outline-none text-sm text-gray-700 leading-relaxed bg-white" placeholder="请在此处粘贴长长的 Newsletter 邮件 HTML 代码...&#10;&#10;系统将自动识别：&#10;- Techmeme&#10;- TLDR"></textarea>
+        </div>
+
+        <!-- 转换控制按钮（悬浮居中） -->
+        <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-20">
+            <button onclick="parseHTML()" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full p-4 shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-indigo-300 border-4 border-white flex flex-col items-center justify-center group">
+                <svg class="w-6 h-6 mb-1 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                <span class="text-[10px] font-bold tracking-wider uppercase">解析</span>
+            </button>
+        </div>
+
+        <!-- 右侧：输出区 -->
+        <div class="w-1/2 flex flex-col bg-gray-50 z-0">
+            <div class="px-4 py-3 bg-white border-b border-gray-200 flex justify-between items-center shrink-0">
+                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                    解析后 Markdown 输出
+                </h2>
+                <div class="flex items-center space-x-3">
+                    <span id="statusIndicator" class="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">等待解析...</span>
+                    <button onclick="copyToClipboard()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors border border-indigo-200 hover:bg-indigo-50 px-3 py-1.5 rounded flex items-center shadow-sm">
+                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        复制结果
+                    </button>
+                </div>
+            </div>
+            <textarea id="markdownOutput" class="textarea-code flex-1 w-full p-4 resize-none outline-none text-sm text-gray-800 leading-relaxed bg-gray-50 border-none" readonly placeholder="点击中间的转换按钮，这里将显示 Agent 友好的结构化 Markdown..."></textarea>
+        </div>
+    </main>
+
+    <!-- 隐藏的 Python 脚本内容，用于下载 -->
+    <script type="text/plain" id="pythonScriptTemplate">import re
+import datetime
+from bs4 import BeautifulSoup
+
+class NewsletterParser:
+    """
+    专门针对 Techmeme 和 TLDR 邮件 HTML 的解析器，输出纯净的 Markdown 格式 (V10 防误杀优化版)。
+    """
+    
+    def __init__(self, html_content):
+        self.html_content = html_content
+        self.soup = BeautifulSoup(html_content, 'html.parser')
+        self.today_str = datetime.date.today().strftime("%Y-%m-%d")
+
+    def parse(self):
+        html_str = str(self.html_content).lower()
+        
+        # 特征识别
+        if 'techmeme' in html_str and 'msg-pbp' in html_str or 'techmeme.com' in html_str:
+            return self._parse_techmeme()
+        elif 'tldr' in html_str and ('tldrnewsletter' in html_str or 'tldr.tech' in html_str):
+            return self._parse_tldr()
+        else:
+            return "【解析失败】未识别的邮件格式，目前仅支持 Techmeme 和 TLDR。"
+
+    def _parse_techmeme(self):
+        md_lines = [f"# Techmeme Daily ({self.today_str})"]
+        
+        sections = self.soup.find_all('div', class_=['first_section', 'section'])
+        seen_titles = set()
+        
+        if not sections:
+            sections = [self.soup]
+            
+        # 全局统一序号，绝不在章节处重置
+        story_counter = 1
+            
+        for section in sections:
+            # 提取大类标题
+            header = section.select_one('.section_header')
+            if header:
+                sec_title = header.get_text(strip=True).title()
+                md_lines.append(f"\n## {sec_title}")
+            elif section == self.soup:
+                md_lines.append("\n## Top News")
+                
+            stories = section.find_all('div', class_=['story', 'big_story'])
+            
+            for story in stories:
+                # 跳过赞助商
+                if 'sponsor' in story.get('class', []):
+                    continue
+                    
+                leading_item = story.select_one('.leading_item') or story
+                title_tag = leading_item.select_one('.title a')
+                
+                if not title_tag:
+                    continue
+                    
+                title = title_tag.get_text(strip=True)
+                if title in seen_titles: 
+                    continue
+                seen_titles.add(title)
+                
+                url = title_tag.get('href', '')
+                cite_tag = leading_item.select_one('.cite')
+                
+                cite = ""
+                if cite_tag:
+                    raw_cite = cite_tag.get_text(strip=True)
+                    clean_cite = raw_cite.strip("()")
+                    cite = f" ({clean_cite})"
+                
+                # 主条目使用数字序号
+                md_lines.append(f"{story_counter}. **[{title}]({url})**{cite}")
+                story_counter += 1
+                
+                # 推文：严格缩进，不再用空行隔开
+                tweets = story.select('.tweet')
+                for tweet in tweets:
+                    tweet_body = tweet.select_one('.tweet_body')
+                    tweet_cite = tweet.select_one('.tweet_cite')
+                    if tweet_body:
+                        t_body_text = " ".join(tweet_body.get_text(strip=True).split())
+                        t_cite_text = tweet_cite.get_text(strip=True) if tweet_cite else ""
+                        md_lines.append(f"    > {t_cite_text} {t_body_text}")
+                        
+                # 子新闻：严格缩进，紧贴主内容，不加空行
+                sub_items = story.select('.sub_item')
+                for sub_item in sub_items:
+                    sub_title_tag = sub_item.select_one('.title a')
+                    sub_cite_tag = sub_item.select_one('.cite')
+                    if sub_title_tag:
+                        s_title = sub_title_tag.get_text(strip=True)
+                        s_url = sub_title_tag.get('href', '')
+                        
+                        s_cite = ""
+                        if sub_cite_tag:
+                            raw_scite = sub_cite_tag.get_text(strip=True)
+                            clean_scite = raw_scite.strip("()")
+                            s_cite = f" ({clean_scite})"
+                            
+                        md_lines.append(f"    - **[{s_title}]({s_url})**{s_cite}")
+                
+                # 仅在完整的一个故事群组结束后加空行隔离
+                md_lines.append("")
+                        
+        return "\n".join(md_lines).strip()
+
+    def _parse_tldr(self):
+        md_lines = [f"# TLDR Daily ({self.today_str})"]
+        
+        # 精简后的过滤词库：移除了 'sponsor' 和 'together with' 防误杀，只保留尾部真实的营销文案
+        skip_keywords = [
+            'unsubscribe', 'manage your subscriptions', 
+            'advertise with us', 'was this email useful', 'love tldr', 
+            'advertise in tldr', 'work at tldr', 'tldr is hiring', 
+            'comments or feedback', 'thanks for reading', 'referral link',
+            'jobs@tldr.tech', 'apply here', 'get $1k', 'tldr swag', 'tell your friends'
+        ]
+        
+        current_category = ""
+        seen_urls = set()
+        
+        # 全局统一序号
+        story_counter = 1
+        
+        for element in self.soup.find_all(['h1', 'div']):
+             if element.name == 'h1':
+                 text = element.get_text(strip=True)
+                 if text.startswith('TLDR') or len(text) > 40 or any(kw in text.lower() for kw in skip_keywords):
+                     continue
+                 if text and text != current_category:
+                     md_lines.append(f"\n## {text}")
+                     current_category = text
+             
+             elif element.name == 'div' and 'text-block' in element.get('class', []):
+                 full_text = element.get_text(separator=' ', strip=True)
+                 full_text_lower = full_text.lower()
+                 
+                 # 过滤垃圾文案
+                 if any(kw in full_text_lower for kw in skip_keywords):
+                     continue
+                     
+                 a_tag = element.find('a')
+                 if not a_tag:
+                     continue
+                 
+                 title = a_tag.get_text(strip=True)
+                 url = a_tag.get('href', '')
+                 
+                 if not url or url in seen_urls or len(title) < 5:
+                     continue
+                 seen_urls.add(url)
+                 
+                 # 提取摘要并去掉标题
+                 summary = full_text.replace(title, '', 1).strip()
+                 
+                 # 擦除因提取产生的多余标点(如逗号或短划线)
+                 summary = re.sub(r'^[\s,;-]+', '', summary)
+                 summary = re.sub(r'\s+', ' ', summary)
+                 
+                 md_lines.append(f"{story_counter}. **[{title}]({url})**")
+                 story_counter += 1
+                 
+                 if summary:
+                     md_lines.append(f"    > {summary}")
+                     
+                 md_lines.append("") # 故事块间的空行
+        
+        return "\n".join(md_lines).strip()
+
+def main(args):
+    """
+    Coze / Dify / FastGPT 代码节点的标准入口
+    """
+    raw_html = args.get('html_content', '')
+    if not raw_html:
+        return {"markdown_result": "未接收到 HTML 内容"}
+        
+    parser = NewsletterParser(raw_html)
+    return {"markdown_result": parser.parse()}
+</script>
+
+    <!-- 解析逻辑 (JavaScript 版，模拟 Python 行为) -->
+    <script>
+        function parseHTML() {
+            const htmlInput = document.getElementById('htmlInput').value;
+            const outputArea = document.getElementById('markdownOutput');
+            const statusIndicator = document.getElementById('statusIndicator');
+
+            if (!htmlInput.trim()) {
+                alert("请先粘贴 HTML 代码。");
+                return;
+            }
+
+            statusIndicator.textContent = "正在解析...";
+            statusIndicator.className = "text-xs font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded";
+
+            try {
+                const lowerHtml = htmlInput.toLowerCase();
+                let markdownResult = "";
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlInput, 'text/html');
+
+                if (lowerHtml.includes('techmeme') || lowerHtml.includes('msg-pbp')) {
+                    statusIndicator.textContent = "✅ 识别为: Techmeme";
+                    statusIndicator.className = "text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200";
+                    markdownResult = parseTechmeme(doc);
+                } else if (lowerHtml.includes('tldr') && (lowerHtml.includes('tldrnewsletter') || lowerHtml.includes('tldr.tech'))) {
+                    statusIndicator.textContent = "✅ 识别为: TLDR";
+                    statusIndicator.className = "text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200";
+                    markdownResult = parseTLDR(doc);
+                } else {
+                    statusIndicator.textContent = "❌ 解析失败";
+                    statusIndicator.className = "text-xs font-medium text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200";
+                    markdownResult = "【解析失败】未识别的邮件格式。请确保粘贴的是 Techmeme 或 TLDR 的完整原始邮件 HTML。";
+                }
+
+                outputArea.value = markdownResult;
+
+            } catch (error) {
+                console.error("解析错误:", error);
+                statusIndicator.textContent = "❌ 解析出错";
+                statusIndicator.className = "text-xs font-medium text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200";
+                outputArea.value = "解析过程中发生错误:\n" + error.message;
+            }
+        }
+
+        function getTodayStr() {
+            const today = new Date();
+            return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        }
+
+        // Techmeme 解析逻辑 V10
+        function parseTechmeme(doc) {
+            let mdLines = [`# Techmeme Daily (${getTodayStr()})`];
+            
+            const sections = doc.querySelectorAll('div.first_section, div.section');
+            const seenTitles = new Set();
+            
+            const iterableSections = sections.length > 0 ? Array.from(sections) : [doc];
+            
+            // 全局统一序号
+            let storyCounter = 1; 
+
+            iterableSections.forEach(section => {
+                const header = section.querySelector('.section_header');
+                if (header) {
+                    let secTitle = header.textContent.trim().toLowerCase().replace(/(^\w|\s\w)/g, m => m.toUpperCase());
+                    mdLines.push(`\n## ${secTitle}`);
+                } else if (sections.length === 0) {
+                    mdLines.push(`\n## Top News`);
+                }
+
+                const stories = section.querySelectorAll('div.story, div.big_story');
+                
+                stories.forEach(story => {
+                    if (story.classList.contains('sponsor')) return;
+
+                    const leadingItem = story.querySelector('.leading_item') || story;
+                    const titleTag = leadingItem.querySelector('.title a');
+                    if (!titleTag) return;
+
+                    const title = titleTag.textContent.trim();
+                    if (seenTitles.has(title)) return;
+                    seenTitles.add(title);
+
+                    const url = titleTag.getAttribute('href') || '';
+                    const citeTag = leadingItem.querySelector('.cite');
+                    
+                    let cite = '';
+                    if (citeTag) {
+                        let cleanCite = citeTag.textContent.trim().replace(/^\(+|\)+$/g, '');
+                        cite = ` (${cleanCite})`;
+                    }
+
+                    mdLines.push(`${storyCounter}. **[${title}](${url})**${cite}`);
+                    storyCounter++;
+
+                    const tweets = story.querySelectorAll('.tweet');
+                    tweets.forEach(tweet => {
+                        const tweetBody = tweet.querySelector('.tweet_body');
+                        const tweetCite = tweet.querySelector('.tweet_cite');
+                        if (tweetBody) {
+                            let tBodyText = tweetBody.textContent.replace(/\s+/g, ' ').trim();
+                            let tCiteText = tweetCite ? tweetCite.textContent.trim() : '';
+                            mdLines.push(`    > ${tCiteText} ${tBodyText}`);
+                        }
+                    });
+
+                    const subItems = story.querySelectorAll('.sub_item');
+                    subItems.forEach(subItem => {
+                        const subTitleTag = subItem.querySelector('.title a');
+                        const subCiteTag = subItem.querySelector('.cite');
+                        if (subTitleTag) {
+                            const sTitle = subTitleTag.textContent.trim();
+                            const sUrl = subTitleTag.getAttribute('href') || '';
+                            
+                            let sCite = '';
+                            if (subCiteTag) {
+                                let cleanSCite = subCiteTag.textContent.trim().replace(/^\(+|\)+$/g, '');
+                                sCite = ` (${cleanSCite})`;
+                            }
+                            
+                            mdLines.push(`    - **[${sTitle}](${sUrl})**${sCite}`);
+                        }
+                    });
+                    
+                    mdLines.push(""); 
+                });
+            });
+            return mdLines.join('\n').trim();
+        }
+
+        // TLDR 解析逻辑 V10 (防误杀优化)
+        function parseTLDR(doc) {
+            let mdLines = [`# TLDR Daily (${getTodayStr()})`];
+            
+            // 精简过滤词库：移除了 sponsor 和 together with 以防误杀正文赞助内容
+            const skipKeywords = [
+                'unsubscribe', 'manage your subscriptions', 
+                'advertise with us', 'was this email useful', 'love tldr', 
+                'advertise in tldr', 'work at tldr', 'tldr is hiring', 
+                'comments or feedback', 'thanks for reading', 'referral link',
+                'jobs@tldr.tech', 'apply here', 'get $1k', 'tldr swag', 'tell your friends'
+            ];
+            
+            let currentCategory = "";
+            const seenUrls = new Set();
+            
+            let storyCounter = 1;
+            
+            const elements = doc.querySelectorAll('h1, div.text-block');
+
+            elements.forEach(element => {
+                const tagName = element.tagName.toLowerCase();
+
+                if (tagName === 'h1') {
+                    let text = element.textContent.trim();
+                    if (text.startsWith('TLDR') || text.length > 40 || skipKeywords.some(kw => text.toLowerCase().includes(kw))) {
+                        return;
+                    }
+                    if (text && text !== currentCategory) {
+                        mdLines.push(`\n## ${text}`);
+                        currentCategory = text;
+                    }
+                } 
+                else if (tagName === 'div') {
+                    let fullText = element.textContent.replace(/\s+/g, ' ').trim();
+                    let fullTextLower = fullText.toLowerCase();
+
+                    // 只干掉命中黑名单词汇的尾部推广区块
+                    if (skipKeywords.some(kw => fullTextLower.includes(kw))) {
+                        return;
+                    }
+
+                    const aTag = element.querySelector('a');
+                    if (!aTag) return;
+                    
+                    const title = aTag.textContent.trim();
+                    const url = aTag.getAttribute('href') || '';
+
+                    if (!url || seenUrls.has(url) || title.length < 5) {
+                        return;
+                    }
+                    seenUrls.add(url);
+
+                    let summary = fullText.replace(title, '').trim();
+                    summary = summary.replace(/^[\s,;-]+/, '');
+
+                    mdLines.push(`${storyCounter}. **[${title}](${url})**`);
+                    storyCounter++;
+                    
+                    if (summary) {
+                        mdLines.push(`    > ${summary}`);
+                    }
+                    mdLines.push(""); 
+                }
+            });
+            
+            return mdLines.join('\n').trim();
+        }
+
+        // 复制 Markdown 功能
+        function copyToClipboard() {
+            const outputArea = document.getElementById('markdownOutput');
+            if (!outputArea.value) {
+                alert("没有内容可复制！请先解析。");
+                return;
+            }
+            outputArea.select();
+            document.execCommand('copy');
+            
+            const btn = document.querySelector('button[onclick="copyToClipboard()"]');
+            const originalHTML = btn.innerHTML;
+            
+            btn.innerHTML = `<svg class="w-3.5 h-3.5 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><span class="text-green-700">已复制!</span>`;
+            btn.classList.add("bg-green-50", "border-green-200");
+            btn.classList.remove("border-indigo-200", "hover:bg-indigo-50", "text-indigo-600");
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove("bg-green-50", "border-green-200");
+                btn.classList.add("border-indigo-200", "hover:bg-indigo-50", "text-indigo-600");
+            }, 2000);
+            
+            window.getSelection().removeAllRanges();
+        }
+
+        // 下载 Python 脚本功能
+        function downloadPythonScript() {
+            const pyContent = document.getElementById('pythonScriptTemplate').textContent;
+            const blob = new Blob([pyContent], { type: "text/x-python" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "newsletter_parser.py";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 加载简短示例数据
+        function loadSampleData(type) {
+            const input = document.getElementById('htmlInput');
+            if (type === 'techmeme') {
+                input.value = `<div class="msg-PBP4IG0u5h0I4oP">
+  <div class="first_section">
+    <div class="section_header uppercase">Top News</div>
+    <div class="big_story">
+      <table class="leading_item">
+        <tr><td>
+          <span class="title"><a href="https://example.com/amazon">Amazon agrees to acquire satellite operator Globalstar</a></span>
+          <span class="cite">(About Amazon)</span>
+        </td></tr>
+      </table>
+      <table>
+        <tr><td>
+          <div class="tweet">
+            <a class="tweet_cite">@apostructura:</a>
+            <a class="tweet_body">Looks like Amazon leo is consolidating...</a>
+          </div>
+        </td></tr>
+      </table>
+      <table class="clustered_items">
+        <li class="sub_item">
+          <span class="title"><a href="#">Amazon agrees to pay $11.57B for Globalstar</a></span>
+          <span class="cite">(Reuters)</span>
+        </li>
+      </table>
+    </div>
+    <div class="story">
+      <table class="leading_item">
+        <tr><td>
+          <span class="title"><a href="#">OpenAI rolls out GPT-5.4-Cyber</a></span>
+          <span class="cite">(Bloomberg)</span>
+        </td></tr>
+      </table>
+    </div>
+  </div>
+</div>`;
+            } else if (type === 'tldr') {
+                input.value = `<div class="msg-mJPCLufrckwfVgb">
+  <div style="text-align:center"><h1><strong>Programming, Design & Data Science</strong></h1></div>
+  
+  <!-- 测试你提到的 Sponsor 文章误杀恢复 -->
+  <td class="container" style="padding:15px 15px">
+    <div class="text-block">
+        <span><a href="https://example.com/webinar"><span><strong>[Webinar] How to stop babysitting your agents (Sponsor)</strong></span></a><br><br>
+        <span style="font-family:Arial">Agents can generate code. Getting it right for your system is the hard part – you end up wasting time and tokens in the back and forth. Join us for a FREE webinar on April 23.</span></span>
+    </div>
+  </td>
+
+  <td class="container" style="padding:15px 15px">
+    <div class="text-block">
+        <span><a href="https://example.com/item1"><span><strong>Valid Article 1 (No strong tag issue)</strong></span></a><br><br>
+        <span style="font-family:Arial">This is a valid article that should be captured.</span></span>
+    </div>
+  </td>
+  
+  <div style="text-align:center"><h1><strong>Quick Links</strong></h1></div>
+  <td class="container" style="padding:15px 15px">
+    <div class="text-block">
+        <span><a href="https://example.com/jobs"><span><strong>Apply here</strong></span></a><br><br>
+        <span>, create your own role or send a friend's resume to jobs@tldr.tech and get $1k if we hire them! TLDR is one of Inc.'s Best Bootstrapped businesses of 2025.</span></span>
+    </div>
+  </td>
+
+  <!-- 模拟尾部推广干扰 -->
+  <div style="text-align:center"><h1><strong>Love TLDR? Tell your friends and get rewards!</strong></h1></div>
+  <td class="container" style="padding:15px 15px">
+    <div class="text-block">
+        <span><a href="https://refer.tldr.tech/"><span><strong>Share your referral link below with friends to get free TLDR swag!</strong></span></a></span>
+    </div>
+  </td>
+</div>`;
+            }
+            // 自动触发解析
+            const statusIndicator = document.getElementById('statusIndicator');
+            statusIndicator.textContent = "加载示例中...";
+            statusIndicator.className = "text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded";
+            setTimeout(parseHTML, 300);
+        }
+    </script>
+</body>
+</html>
