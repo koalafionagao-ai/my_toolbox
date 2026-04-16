@@ -304,7 +304,7 @@
                 <span data-i18n="currentFileLabel" class="font-medium mr-2 whitespace-nowrap text-[var(--text-muted)]">当前文件:</span>
                 <span id="currentFileName" class="truncate font-mono font-semibold"></span>
             </div>
-            <button id="reprocessBtn" class="btn btn-primary" data-i18n="reprocessBtn">🔄 重新处理</button>
+            <button id="reprocessBtn" class="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition shadow-sm" data-i18n="reprocessBtn">🔄 重新处理</button>
         </div>
         <div id="statusMsg" class="mt-4 text-center hidden text-sm font-medium"></div>
     </div>
@@ -795,13 +795,19 @@
                 }
 
                 const isEn = finalPrefix.includes('/en/') || isOriginalEn;
-                doc.querySelectorAll('.custom-blog-meta').forEach(el => el.remove()); doc.querySelectorAll('.custom-blog-footer').forEach(el => el.remove()); doc.querySelectorAll('meta[property^="og:"], meta[name^="twitter:"], meta[name="description"]').forEach(el => el.remove());
+                
+                // 💡 提取出 PAGE_META，将页头页尾交由线上的 global-layout.js 接管
+                const metaScript = doc.createElement('script');
+                metaScript.innerHTML = `\n        window.PAGE_META = {\n            tags: \`${tags}\`,\n            cTime: '${cTime}',\n            uTime: '${uTime}',\n            isEn: ${isEn}\n        };\n    `;
+                doc.head.insertBefore(metaScript, doc.head.firstChild);
 
                 const h1 = doc.querySelector('h1.page-title') || doc.querySelector('h1');
                 const header = doc.querySelector('header');
                 if (header && h1 && header.contains(h1)) { header.innerHTML = ''; header.appendChild(h1); }
                 
-                // 💡 【新增】为所有标题打上规范的 ID，供 Tocbot 锚点跳转使用
+                const pageTitleRaw = h1 ? h1.textContent.trim() : (doc.querySelector('title') ? doc.querySelector('title').textContent : "Fiona Gao's Blog");
+
+                // 为所有标题打上规范的 ID，供 Tocbot 锚点跳转使用
                 doc.querySelectorAll('.page-body h1, .page-body h2, .page-body h3, h1, h2, h3').forEach((h, index) => {
                     if (!h.id) {
                         const safeText = h.textContent.trim().replace(/\s+/g, '-').toLowerCase() || 'heading';
@@ -809,7 +815,7 @@
                     }
                 });
                 
-                // 💡 【新增】微信朋友圈首图 Hack (隐藏的高清首图，专治微信瞎眼爬虫)
+                // 微信朋友圈首图 Hack
                 const wechatHack = doc.createElement('div');
                 wechatHack.style.cssText = 'width:0; height:0; position:absolute; overflow:hidden;';
                 wechatHack.innerHTML = `<img src="${ogImageUrl}" alt="cover">`;
@@ -911,15 +917,6 @@
                 `;
                 doc.head.appendChild(style);
 
-                const metaContainer = doc.createElement('div'); metaContainer.className = 'custom-blog-meta';
-                const translateIcon = `<svg style="width:14px;height:14px;opacity:0.7;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>`;
-                metaContainer.innerHTML = `<div class="meta-row"><div class="meta-left">${tags ? `<div style="display:flex;align-items:center;gap:0.35rem;"><svg style="width:14px;height:14px;opacity:0.6;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg><span style="font-weight:600;color:#4b5563;font-size:0.8125rem;">${isEn?'Tags':'标签'}:</span><div class="meta-tags-value" style="display:flex;gap:0.3rem;">${tags}</div></div>` : ''}<div class="author-badge" onclick="copyAuthorEmail(this)" title="koala.fiona.gao@gmail.com"><svg style="width:14px;height:14px;opacity:0.8;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg><span class="author-text">Fiona Gao</span></div></div><div class="meta-right"><a href="https://koalafionagao-ai.github.io/my_blogs/" target="_blank" class="meta-text-link" style="display:flex;align-items:center;gap:4px;"><svg style="width:15px;height:15px;opacity:0.8;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>${isEn?'Home':'首页'}</a></div></div><div class="meta-row" style="color: #6b7280; font-size: 0.8125rem;"><div class="meta-left" style="gap: 1.25rem;">${cTime ? `<div style="display:flex;align-items:center;gap:0.35rem;"><svg style="width:14px;height:14px;opacity:0.6;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><span style="font-weight:600;color:#4b5563;">${isEn?'Created':'创建时间'}:</span> <span class="meta-ctime-value" style="color: #1f2937;">${cTime}</span></div>` : ''}${uTime ? `<div style="display:flex;align-items:center;gap:0.35rem;"><svg style="width:14px;height:14px;opacity:0.6;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span style="font-weight:600;color:#4b5563;">${isEn?'Updated':'更新时间'}:</span> <span class="meta-utime-value" style="color: #1f2937;">${uTime}</span></div>` : ''}</div><div class="meta-right"><span class="meta-text-link" onclick="togglePageLanguage()">${translateIcon} ${isEn?'中文':'English'}</span></div></div>`;
-                if (h1) { h1.style.marginBottom = "0.5rem"; h1.after(metaContainer); } else { doc.body.prepend(metaContainer); }
-
-                // 💡 修复：完美双语脚部版权与免责声明
-                const footer = doc.createElement('footer'); footer.className = 'custom-blog-footer'; footer.innerHTML = `<div class="copyright-row">© 2026 <a href="mailto:koala.fiona.gao@gmail.com" class="footer-author-link">Fiona Gao</a>. ${isEn ? 'All Rights Reserved.' : '原创文章，保留所有权利。'}</div><div class="legal-row"><strong>${isEn ? 'LEGAL DISCLAIMER:' : '法律声明：'}</strong> ${isEn ? 'All content is original. Unauthorized reproduction or commercial use is strictly prohibited.' : '本文为原创内容。未经书面许可，严禁任何形式的未经授权转载或商业使用。'}</div>`;
-                (doc.querySelector('.page-body') || doc.body).appendChild(footer);
-
                 // 💡 右侧悬浮目录容器 (精简版：剥离移动端杂余DOM，极致纯净无标题栏)
                 const tocContainer = doc.createElement('div');
                 tocContainer.className = 'toc-wrapper';
@@ -944,7 +941,6 @@
                     }
                 });
 
-                const pageTitleRaw = h1 ? h1.textContent.trim() : (doc.querySelector('title') ? doc.querySelector('title').textContent : "Fiona Gao's Blog");
                 const descNode = doc.querySelector('.page-description');
                 const pageDescRaw = descNode && descNode.textContent.trim() !== "" ? descNode.textContent.trim() : (isEn ? "Discover insights and stories on Fiona Gao's technical blog." : "探索 Fiona Gao 的技术博客，获取最新洞察与分享。");
 
@@ -997,11 +993,15 @@
                 `;
                 doc.body.appendChild(scripts);
                 
+                // 💡 注入 global-layout.js
+                const globalJs = doc.createElement('script');
+                globalJs.src = '/my_blogs/assets/global-layout.js';
+                doc.body.appendChild(globalJs);
+                
                 if (!doc.querySelector('link[href*="prism-tomorrow"]')) { const l = doc.createElement('link'); l.rel='stylesheet'; l.href='https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css'; doc.head.appendChild(l); }
                 const p1 = doc.createElement('script'); p1.src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js'; doc.body.appendChild(p1);
                 const p2 = doc.createElement('script'); p2.src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js'; doc.body.appendChild(p2);
 
-                // 💡 【新增】注入 Tocbot 依赖
                 const tocCss = doc.createElement('link'); tocCss.rel='stylesheet'; tocCss.href='https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.21.2/tocbot.css'; doc.head.appendChild(tocCss);
                 const tocJs = doc.createElement('script'); tocJs.src='https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.21.2/tocbot.min.js'; doc.body.appendChild(tocJs);
 
@@ -1108,6 +1108,16 @@
                     } 
                 } 
             }); 
+            
+            // 💡 在本地预览页面添加提示，告知用户页头页尾将在线上生成
+            const h1 = doc.querySelector('h1.page-title') || doc.querySelector('h1');
+            if (h1) {
+                const mockMeta = doc.createElement('div');
+                mockMeta.className = 'custom-blog-meta';
+                mockMeta.innerHTML = '<div style="background:#f3f4f6; color:#6b7280; padding:12px; border-radius:8px; font-size:13px; font-weight:600; text-align:center;">💡 当前为本地预览环境，页头和页脚组件将在线上由 global-layout.js 自动接管展现。</div>';
+                h1.after(mockMeta);
+            }
+            
             const blob = new Blob(["<!DOCTYPE html>\n" + doc.documentElement.outerHTML], { type: 'text/html;charset=utf-8' }); 
             window.open(URL.createObjectURL(blob), '_blank'); 
         });
